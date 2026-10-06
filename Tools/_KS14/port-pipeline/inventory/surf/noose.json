@@ -1,0 +1,67 @@
+{
+  "feature": "noose",
+  "one_line": "A craftable/deconstructable hanging structure you can buckle a human into to slowly strangle them (or yourself) to death while they dangle and struggle.",
+  "player_facing_mechanics": [
+    "Buckle a human into the noose (15 seconds do_after; only 2 seconds if the target is dead or you are noosing yourself)",
+    "Monkeys get a different higher hang offset; golems and moths are rejected with a notice that their head doesn't fit",
+    "Targets without a head, or not on the noose's turf, cannot be noosed",
+    "While hung, the victim takes 5 oxyloss per processing tick and periodically gasps or shows grim struggle messages",
+    "The hung victim, the noose, and its neck overlay sway back and forth with animated pixel offsets",
+    "Bystanders take 100 ticks to untie the noose over a victim; the victim can struggle free in 150 ticks",
+    "If the victim loses gravity or loses their head, everyone is automatically unbuckled",
+    "On release the victim drops, is knocked down for 60 ticks, and their pixel/layer offsets reset",
+    "Deconstruct with a wirecutter (secondary act) to recover a cable coil"
+  ],
+  "content_types": [
+    "structure"
+  ],
+  "type_paths": [
+    "/obj/structure/noose",
+    "/obj/effect/overlay/vis/noose_neck_overlay"
+  ],
+  "tg_systems_used": [
+    "buckle system (can_buckle, buckle_mob, user_buckle_mob, post_buckle_mob, post_unbuckle_mob)",
+    "do_after",
+    "processing subsystem (SSobj START/STOP_PROCESSING, process())",
+    "vis overlays subsystem (SSvis_overlays._create_new_vis_overlay)",
+    "signals (COMSIG_MOVABLE_MOVED, RegisterSignal/UnregisterSignal/SIGNAL_HANDLER)",
+    "atom colour system (add_atom_colour, atom_colours)",
+    "planes/layers (ABOVE_ALL_MOB_LAYER, MOB_LAYER, NOOSED_MOB_LAYER, ABOVE_MOB_LAYER, LYING_MOB_LAYER)",
+    "health/breathing (adjustOxyLoss, stat, has_gravity, get_bodypart)",
+    "traits (TRAIT_NOBREATH)",
+    "emotes (emote(\"gasp\"))",
+    "species checks (ishuman, isgolem, ismoth, ismonkey)",
+    "tool interaction (wirecutter_act_secondary, deconstruct/atom_deconstruct)"
+  ],
+  "data_only_parts": [
+    "name, desc, icon, icon_state",
+    "max_integrity = 200",
+    "layer/anchored/buckle_lying/can_buckle flags",
+    "grim_text static message list",
+    "hanging_pixel_y offsets (9 normal, 14 monkey)",
+    "cable coil drop from deconstruction"
+  ],
+  "logic_parts": [
+    "user_buckle_mob eligibility checks and variable do_after duration",
+    "user_unbuckle_mob differing timers for self vs bystander",
+    "post_buckle_mob / post_unbuckle_mob visual re-offset, layer swap, dropdown and knockdown",
+    "process() breathing damage, gravity/head checks, sway animation, grim messages",
+    "create_noose_overlay / move_overlay overlay lifecycle tied to movement signal and destruction",
+    "atom_deconstruct / Destroy cleanup registration"
+  ],
+  "byond_specific": [
+    "animate() with ELASTIC_EASING for sway and hang drop",
+    "SSvis_overlays._create_new_vis_overlay and plane/pixel_y visual offsetting",
+    "RegisterSignal/PROC_REF/SIGNAL_HANDLER runtime procs",
+    "do_after and SECONDS macro timing",
+    "span_*() helper wrappers",
+    "playsound of surfshack13/sound/effects/noosed.ogg"
+  ],
+  "complexity": "simple",
+  "portability": "partial",
+  "port_notes": "SS14 would model the noose as an entity with a Buckleable/Strap component plus a dedicated NooseSystem that owns the hanging state machine: a DoAfter to insert/remove, a periodic Thirst-like system tick applying Asphyxiation/oxygen damage, and a visual overlay entity tracked to the noose's transform. Movement/sway maps to sprite offset animation or a client-side sway; the movement signal maps to a Transform/component event and the gravity/head-loss auto-release maps to reactive subscriptions on those components. Destroy/deconstruct cleanup maps to a system that deletes the overlay and unregisters subscriptions, and the cable-coil drop becomes a SpawnEntityOnInteract/deconstruct result. A human must decide whether to reuse upstream SS14's choking/noose content instead of porting this fork variant, and how to represent pixel-level sway and the monkey/golem/moth exceptions in an ECS without smuggling hardcoded species data into the system.",
+  "_files": [
+    "code/objects/structures/noose.dm"
+  ],
+  "_dm_lines": 155
+}

@@ -1,0 +1,83 @@
+{
+  "feature": "voicechat",
+  "one_line": "Proximity-based voice chat that connects players' browsers to an external Node/WebRTC server so nearby characters hear each other talk, with optional global and ghost channels.",
+  "player_facing_mechanics": [
+    "Join voice chat with the default browser via the ProxChat 'Join' verb",
+    "Join using an external URL (link/QR) via the 'Join with URL' verb for browsers that fail to auto-open",
+    "See a floating voice/speaker overlay icon above a mob while it is speaking",
+    "Hear only players within proximity on the same Z-level/room",
+    "Be moved to non-proximity global channels (lobby/round-end) where everyone can hear everyone",
+    "Become automatically silenced/muted from proximity when knocked out, deaf, mute, or miming",
+    "Be placed in a ghost channel when dead and returned to normal voice room when revived",
+    "Mute yourself with the 'Mute' verb",
+    "Deafen yourself with the 'Deafen' verb",
+    "Leave voice chat with the 'Leave' verb",
+    "Read in-client help/troubleshooting via the 'Help' verb",
+    "Admins can restart voice chat (disconnecting everyone)",
+    "Admins can stop voice chat entirely"
+  ],
+  "content_types": [
+    "infrastructure",
+    "ui",
+    "admin_tool",
+    "other"
+  ],
+  "type_paths": [
+    "/datum/controller/subsystem/voicechat",
+    "/mob (verbs join_vc, join_with_url, help_voicechat, mute_self, deafen, leave)",
+    "/mob/proc/toggle_voice_overlay",
+    "/proc/json_encode_sanitize",
+    "ADMIN_VERB restart_voicechat",
+    "ADMIN_VERB stop_voicechat"
+  ],
+  "tg_systems_used": [
+    "subsystems (SSvoicechat, SS_KEEP_TIMING, runlevels, init_order)",
+    "config flags/number (CONFIG_GET enable_voicechat, port_voicechat)",
+    "SSticker game state / COMSIG_TICKER_ROUND_ENDED",
+    "signals and signal handlers (COMSIG_TOPIC, COMSIG_MOB_LOGOUT, COMSIG_QDELETING, COMSIG_LIVING_DEATH, COMSIG_LIVING_REVIVE, SIGNAL_ADDTRAIT/REMOVETRAIT)",
+    "status traits (TRAIT_KNOCKEDOUT, TRAIT_DEAF, TRAIT_MUTE, TRAIT_MIMING)",
+    "admin verbs (ADMIN_VERB), message_admins, to_chat/span_ooc",
+    "GLOB room lists (GLOB.rooms_proximity, GLOB.rooms_global)",
+    "overlays/vis_contents, planes (FLY_LAYER)",
+    "out-of-game client verbs (ProxChat category)"
+  ],
+  "data_only_parts": [
+    "Room constants/definitions (ROOM_NONE, ROOM_INVALID, ROOM_GHOST, ROOM_GLOBAL_LOBBY) and GLOB.rooms_proximity / GLOB.rooms_global room lists",
+    "Config flags/numbers (enable_voicechat, port_voicechat)",
+    "mob voice variable defaults (voice_chat_room, voice_icon_state) and the voice_overlay.dmi icon reference",
+    "The static help HTML text in help_voicechat",
+    "Trait-to-room mapping rules (which traits silence a player)"
+  ],
+  "logic_parts": [
+    "Subsystem lifecycle: Initialize, fire() location broadcasting loop, Shutdown, restart",
+    "Room membership management (add_rooms, remove_rooms, clear_userCode, move_userCode_to_room)",
+    "Client/userCode/session registration and mapping (open_vc, generate_userCode, confirm_userCode, link_userCode_client, disconnect)",
+    "Per-mob signal registration and condition evaluation (register_mob_signals, on_mob_changed, check_mob_conditions, clear_from_room, add_to_room, on_mob_death/revive)",
+    "Overlay toggling (toggle_voice_overlay) driven by voice-activity callbacks",
+    "mute_mic / deafen message routing",
+    "JSON packet encoding/sanitization and topic/route dispatch (send_json, send_locations, handle_topic)",
+    "Round-end relocation of all clients to the global lobby room"
+  ],
+  "byond_specific": [
+    "External process launch via shell('node ... &') and world.process / world.port / world.internet_address",
+    "call_ext to a native BYOND socket library (voicechat/pipes/unix/byondsocket: byond:Echo, byond:SendJSON) - the Node <-> BYOND bridge",
+    "Inbound redirects/traffic via a Topic handler (handle_topic) restricted to addr 127.0.0.1",
+    "Client output via << browse(), browse_rsc() asset delivery, link(), window= targeting",
+    "Client-only web glue: window.location origin capture, WebRTC in the player's browser, socket.io client JS",
+    "world.system_type / OS-specific shell commands (kill vs taskkill /F /PID) to stop the node process",
+    "MD5 userCode/session generation from computer_id/address",
+    "Verbs (mob/verb, set category='ProxChat') and ADMIN_VERB",
+    "file2text(node.pid)/fdel for PID management"
+  ],
+  "complexity": "large",
+  "portability": "infrastructure_only",
+  "port_notes": "The BYOND side is thin glue: it tracks player positions/rooms and forwards JSON over a native socket library to an out-of-process Node/WebRTC relay that does the actual audio; almost nothing here maps to SS14 gameplay prototypes, so this is infrastructure, not content. An SS14 port would replace the subsystem with an ECS system that maintains per-session entities/components (position, session id, room) and raises events on mob state changes (KO/deaf/mute/death) plus a round-end rule, using SS14's existing signal/CVars/DoAfter-free patterns, and swap the browse/call_ext bridge for SS14's own voice server (RobustToolbox already ships a WebRTC voice server) with components for microphone/mute state. Key human decisions: reuse SS14's built-in voice chat versus re-implement this Node relay; how proximity is computed in the grid/space world (Z-level + tile radius vs SS14 maps); how to model global/ghost/lobby channels as rule or system state; and how admin restart/stop and per-player mute are exposed through SS14 admin tools rather than BYOND verbs.",
+  "_files": [
+    "code/modules/voicechat/_voicechat.dm",
+    "code/modules/voicechat/voicechat_clientstuff.dm",
+    "code/modules/voicechat/voicechat_overlay.dm",
+    "code/modules/voicechat/voicechat_routes.dm",
+    "code/modules/voicechat/voicechat_verbs.dm"
+  ],
+  "_dm_lines": 663
+}

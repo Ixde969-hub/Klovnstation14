@@ -1,0 +1,72 @@
+{
+  "feature": "execution_sword",
+  "one_line": "A ceremonial melee sword that, when you strike a living human, triggers a public announced 15-30 second execution ritual that decapitates the victim if the channel completes.",
+  "player_facing_mechanics": [
+    "Attack a living human with a mind (not yourself) to start an execution instead of a normal hit",
+    "A server-wide announcement names the attacker, victim, location and faction, and plays an announcer notice sound",
+    "A countdown/do_after channel of configurable length (15s base, 30s syndicate, 20s admin, or 30s for antag) during which the attacker must stay in range of the victim",
+    "On success the target's head bodypart is dismembered and a follow-up announcement confirms the execution in the faction's name",
+    "On failure the execution aborts, a failure sound plays, and an announcement declares the attacker brought shame to the faction",
+    "3 minute internal cooldown, shown to the user in rounded minutes when they try again too soon",
+    "Freeform faction/entity name entry via a TGUI text input on use-in-hand (only for variants with can_change_faction)",
+    "Examine text tells the user an input exists on the hilt to rename the faction (only when can_change_faction)",
+    "Suicide with the sword announces the user taking their own life in the faction's name and dismembers their own head",
+    "Antag variant plays one of a random list of three nasheed songs during the execution (localized sound channel)",
+    "Admin variant plays one of two songs broadcast to the entire world and lets admin pick the faction",
+    "Ends early / refunds nothing if target already dead, headless, or attacking a non-human / mindless mob (falls through to normal attack)"
+  ],
+  "content_types": [
+    "item"
+  ],
+  "type_paths": [
+    "/obj/item/melee/execution_sword",
+    "/obj/item/melee/execution_sword/antag",
+    "/obj/item/melee/execution_sword/admin"
+  ],
+  "tg_systems_used": [
+    "item melee/combat (attack override, force, sharpness, attack verbs, hitsound)",
+    "bodyparts & dismemberment (get_bodypart(\"head\"), dismember())",
+    "do_after channelling",
+    "cooldown macros (STATIC_COOLDOWN_DECLARE / COOLDOWN_START / COOLDOWN_FINISHED / COOLDOWN_TIMELEFT)",
+    "minor_announce announcer subsystem",
+    "playsound / sound channels (CHANNEL_EXECUTION_SWORD, stop_sound_channel)",
+    "TGUI input (tgui_input_text)",
+    "admin messaging (message_admins, ADMIN_LOOKUPFLW)",
+    "chat spans (span_notice, span_suicide)",
+    "suicide_act",
+    "mob mind / stat checks",
+    "area name lookup (get_area_name)",
+    "LAZYNULL list helpers"
+  ],
+  "data_only_parts": [
+    "Base item stats: name, desc, icons (icon, icon_state, inhand_icon_state, lefthand_file, righthand_file), force, throwforce, sharpness, attack_verb_continuous/simple, hitsound, w_class",
+    "Default execution_faction string, can_change_faction flag, execution_time, and the EXECUTION_COOLDOWN_TIME / SOUND_VOLUME defines",
+    "antag subtype data: execution_faction \"The Syndicate\", can_change_faction TRUE, execution_time 30 SECONDS, execution_songs osts",
+    "admin subtype data: execution_faction \"Centcom\", can_change_faction TRUE, execution_time 20 SECONDS, execution_songs list"
+  ],
+  "logic_parts": [
+    "attack() gating: ishuman + has mind + not self + has head + not dead + cooldown ready, else fall back to normal attack",
+    "cooldown check with human-readable remaining-minutes message",
+    "the do_after execution channel and success/failure branches (dismember on success only)",
+    "minor_announce start/success/failure messages and sound override flag",
+    "play_execution_music / stop_execution_music per-variant (no-op, local playsound with listeners list, world-broadcast SEND_SOUND)",
+    "tgui_input_text faction renaming plus message_admins audit log",
+    "suicide_act behaviour (announce + self-dismember)"
+  ],
+  "byond_specific": [
+    "do_after() channel helper",
+    "playsound() / SEND_SOUND(world, sound(...)) world-broadcast audio",
+    "stop_sound_channel() and sound channels (CHANNEL_EXECUTION_SWORD)",
+    "tgui_input_text user prompt",
+    "message_admins / ADMIN_LOOKUPFLW admin logging with follow links",
+    "BYOND string templates / span macros and p_their()/p_theyre() pronouns",
+    "STATIC_COOLDOWN_* macro bookkeeping"
+  ],
+  "complexity": "medium",
+  "portability": "partial",
+  "port_notes": "Maps cleanly to an ExecutionSwordComponent + ExecutionSwordSystem: intercept the melee hit event to branch into a DoAfter channel (with target head/dismember check via a Body/dismember system), then fire an announcer event on start/success/failure and apply dismember on success. The 3-minute cooldown becomes a held-item cooldown/action timer with a user popup; faction renaming maps to a UI BoundUserInterface or a simple verb/action opening a text field (SS14 has no direct tgui_input_text, so it needs a BUI window or an admin/verb path). Antag/admin song playback is the friction point: local playsound can map to AudioSystem/predicted sound entities, but the admin variant's SEND_SOUND(world,...) global broadcast has no direct SS14 analogue and needs a design decision (global audio entity vs. server-wide announcement only). Open questions: should the execution be an item component or a gamerule/antag ability, should the mechanic be tradable/stealable as a plain item, and how to expose the admin-only variant and world-music behaviour in the SS14 admin tooling.",
+  "_files": [
+    "code/objects/items/execution_sword.dm"
+  ],
+  "_dm_lines": 122
+}

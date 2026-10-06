@@ -1,0 +1,75 @@
+{
+  "feature": "public_announce",
+  "one_line": "A buildable public announcements computer that lets a crew member pay 900 credits to broadcast a station-wide voice announcement, on an 11-minute shared cooldown.",
+  "player_facing_mechanics": [
+    "Interact with the console to open a TGUI text box announcing the 900-credit cost",
+    "Type an announcement up to 512 characters (half of MAX_MESSAGE_LEN)",
+    "Message is passed through try_speak/treat_message, so mutes/mimes produce only '...' and speech filters (stutters, etc.) apply",
+    "Pay 900 credits from a non-departmental ID's registered bank account; failure messages if no ID, departmental card, no bank account, or insufficient funds",
+    "A several-second do_after payment/ EULA prompt must complete before the announcement fires",
+    "The announcement is broadcast to every player (minor_announce with 'Crew Announcement:' prefix) plus a deadchat broadcast naming the announcer and area",
+    "An 11-minute cooldown between announcements, shown as 'The transmitter is charging. N minutes left.'",
+    "Examine shows the credit cost",
+    "Only usable on station Z-levels by carbons, and only one user at a time (in_use lock)",
+    "Emagged console overloads: sparks, exposes a hotspot, explodes (heavy 1, light 3, flash 4) and destroys itself",
+    "Cooldown is rounded down at roundstart to half (5.5 min) to prevent roundstart spam; STATIC_COOLDOWN_DECLARE means it persists/shared"
+  ],
+  "content_types": [
+    "machine",
+    "structure",
+    "recipe",
+    "ui",
+    "other"
+  ],
+  "type_paths": [
+    "/obj/machinery/computer/public_announcement",
+    "/obj/item/circuitboard/computer/public_announcement",
+    "/datum/design/board/announceconsole"
+  ],
+  "tg_systems_used": [
+    "machinery/computer base with icon_screen/icon_keyboard/circuit",
+    "TGUI (tgui_input_text)",
+    "economy/banking (datum/bank_account, get_idcard, IS_DEPARTMENTAL_CARD, has_money, adjust_money)",
+    "required map items (REGISTER_REQUIRED_MAP_ITEM)",
+    "cooldown helpers (STATIC_COOLDOWN_DECLARE, COOLDOWN_FINISHED/START, COOLDOWN_TIMELEFT)",
+    "emag interaction (emag_act, EMAGGED obj_flag)",
+    "explosion, hotspot_expose, do_sparks",
+    "speech/messages (try_speak, treat_message, visible_message, to_chat, spans)",
+    "announcements (minor_announce, GLOB.player_list) and deadchat_broadcast (DEADCHAT_ANNOUNCEMENT)",
+    "station-level check (is_station_level)",
+    "research/designs (RND_CATEGORY_COMPUTER, circuitboard build_path)",
+    "do_after actions, can_perform_action"
+  ],
+  "data_only_parts": [
+    "console name/desc/icon_screen/icon_keyboard/circuit fields",
+    "ANNOUNCE_COST and CREW_ANNOUNCE_COOLDOWN constants",
+    "circuitboard definition (name, greyscale_colors, build_path)",
+    "research design entry (name, desc, id, build_path, category)",
+    "examine text"
+  ],
+  "logic_parts": [
+    "interact() flow: operational/in_use/carbon/station-level gating, cooldown check, TGUI input, speech processing, do_after, payment, broadcast, cooldown start",
+    "pay_for_announcement(): ID card lookup, departmental-card rejection, bank account validation and credit deduction",
+    "overload_transmitters(): explosion/sparks/hotspot and Destroy() on emag use",
+    "Initialize() roundstart cooldown seed via REGISTER_REQUIRED_MAP_ITEM"
+  ],
+  "byond_specific": [
+    "STATIC_COOLDOWN_DECLARE / static vars (max_length, cooldown) \u2014 BYOND static var semantics",
+    "tgui_input_text (TGUI browse-based input)",
+    "do_after and can_perform_action",
+    "obj_flags bitfield (EMAGGED)",
+    "spans macros (span_notice, span_hear), deadchat_broadcast, minor_announce",
+    "GLOB.player_list",
+    "IS_DEPARTMENTAL_CARD / id_card type macros",
+    "#define/#undef preprocessor constants"
+  ],
+  "complexity": "medium",
+  "portability": "partial",
+  "port_notes": "The console maps naturally to an SS14 entity with a component holding cooldown state plus a system handling the interaction, but the credit economy (bank_account, ID-card department checks) has no direct SS14 equivalent and needs an economy/ID system port first. The TGUI text input becomes a BoundUserInterface window or an interaction DoAfter popup; minor_announce/deadchat map roughly to radio/chat events, and the do_after payment step becomes a DoAfter with a completion event. Emag overload maps to a hacking/emag-component trigger spawning an explosion via ExplosionEvent, and the design/circuitboard entries become YAML prototypes for construction and the tech-tree unlock. A human must decide: whether announcement cost/cooldown are per-console or global, how to model departmental ID rejection, and whether the static shared cooldown is intended (it is declared STATIC, so it persists across the round).",
+  "_files": [
+    "code/game/machinery/computer/public_announce.dm",
+    "code/game/objects/items/circuitboards/computer_circuitboards.dm",
+    "code/modules/research/designs/comp_board_designs.dm"
+  ],
+  "_dm_lines": 123
+}

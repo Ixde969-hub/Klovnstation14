@@ -1,0 +1,66 @@
+{
+  "feature": "clown_props",
+  "one_line": "Clown-only gimmick props: a throwable/self-activating banana-copter and a clown-built creampie-torium that turns cremated bodies into pies.",
+  "player_facing_mechanics": [
+    "Examine a clown_prop to see remaining uses (\"infinite\" or a count)",
+    "Use (activate) a clown_prop by hand only if you have a clown job and are wearing clown uniform, otherwise gets a 'not silly enough' notice",
+    "Try to use a prop on cooldown and get a 'still reseting' message",
+    "Using a prop spends one use and destroys the item when uses run out",
+    "spinning_banana (banana-copter): 5 uses, ties the banana around your waist, locks you facing south, immobilizes you, floats you up/down, spins the banana sprite, plays a sound, then returns the item to your hand",
+    "Examine crematorium as a clown to be told it can become a creampie-torium with bananium",
+    "Attack a crematorium with a bananium sheet to consume one sheet and convert it into a creampie-torium",
+    "Cremating bodies in a creampie-torium turns every contained living mob into a cream pie that is placed inside it"
+  ],
+  "content_types": [
+    "item",
+    "structure"
+  ],
+  "type_paths": [
+    "/obj/item/clown_prop",
+    "/obj/item/clown_prop/spinning_banana",
+    "/obj/structure/bodycontainer/crematorium/creampie",
+    "/obj/structure/bodycontainer/crematorium (extended)"
+  ],
+  "tg_systems_used": [
+    "signal handlers / RegisterSignal / UnregisterSignal / COMSIG_ATOM_PRE_DIR_CHANGE",
+    "components / datum/component/tweak",
+    "timer subsystem (addtimer, QDEL_IN)",
+    "BYOND animation/matrix/vis_contents",
+    "job/role checks (is_clown_job, mind.assigned_role) and clothing-type check (w_uniform)",
+    "mob immobilize/lock_dir",
+    "item equipment slot logic (equip_to_slot_if_possible)",
+    "span macros and playsound"
+  ],
+  "data_only_parts": [
+    "clown_prop names, descriptions, icon and icon_state values",
+    "uses_left count and default infinite (-1) value",
+    "spinning_banana 5-uses stat",
+    "creampie-torium name and desc",
+    "creampie-torium clown mask overlay appearance (icon/icon_state/plane/dir)",
+    "STEPTIME/SEQUENCE_LENGTH/CYCLES timing constants"
+  ],
+  "logic_parts": [
+    "attack_self gating on clown job + clown uniform + cooldown + use decrement + Destroy",
+    "activate() proc dispatch to per-prop behavior",
+    "spinning_banana/activate flail animation, immobilize, dir lock, sound, and move_back return-to-hand",
+    "lock_dir/user_tried_turn signal handler blocking direction changes",
+    "crematorium attacked_by bananium conversion (use sheet, new creampie, copy dir/id)",
+    "creampie cremate override spawning pies and adding the tweak component"
+  ],
+  "byond_specific": [
+    "matrix() and animate() chained animations with flags = ANIMATION_CONTINUE",
+    "vis_contents += and pixel_y/pixel_z/layer manipulation",
+    "RegisterSignal handlers returning COMPONENT_ATOM_BLOCK_DIR_CHANGE",
+    "addtimer/CALLBACK/QDEL_IN and PROC_REF/TYPE_PROC_REF/PROC_REF macro references",
+    "preprocessor #define timing macros and #undef",
+    "span_* macros (span_info, span_notice, span_suicide) and playsound"
+  ],
+  "complexity": "simple",
+  "portability": "partial",
+  "port_notes": "Mostly data plus a little behavior. Two entity prototypes (clown prop base + banana-copter, crematorium/creampie-torium) map cleanly, and the creampie conversion becomes a construction graph node (bananium sheet -> creampie-torium) with the cremation handled by a body-container system event. The banana-copter's flail/spin/immobilize/dir-lock needs real code: a Use-in-hand event gated on clown job + worn uniform, a DoAfter or status-effect-based immobilize, a direction-lock component, and a sprite overlay driven by an animation system (no direct matrix/animate equivalent). Design questions: should the clown-only gating and cooldown stay hardcoded, and how faithful must the pixel_z bob/spin be versus a simpler generic animation?",
+  "_files": [
+    "code/modules/clown/clown_props.dm",
+    "code/game/objects/structures/creampie-torium.dm"
+  ],
+  "_dm_lines": 128
+}

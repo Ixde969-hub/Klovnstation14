@@ -1,0 +1,64 @@
+{
+  "feature": "soda_robot",
+  "one_line": "A craftable little soda-can robot that chirps with a bike-horn sound and can have reagents injected into the soda can inside it.",
+  "player_facing_mechanics": [
+    "Craft the Little Soda Robot from a soda can, a proximity sensor and a right robot arm in the robot category.",
+    "The bot holds a soda can (a default soda can is auto-created if none supplied) and displays an overlay matching that can's icon.",
+    "Chirps (plays a bike-horn/smoke-detector sound) on its own via AI, with a 1-minute cooldown.",
+    "Each chirp has a 5% chance to destroy its buzzer, after which it can no longer chirp and the holder sees 'Your buzzer gives out!'.",
+    "Examine shows 'Reagents can be injected into it' to holders of the research scanner trait.",
+    "Behaves as a basic bot: responds to summon, salutes authority, patrols via beacons, and randomly uses its honk/chirp ability."
+  ],
+  "content_types": [
+    "mob",
+    "recipe",
+    "reagent",
+    "ui"
+  ],
+  "type_paths": [
+    "/mob/living/basic/bot/soda_robot",
+    "/datum/crafting_recipe/sodarobot",
+    "/datum/ai_controller/basic_controller/bot/soda_robot",
+    "/datum/action/cooldown/mob_cooldown/bot/chirp"
+  ],
+  "tg_systems_used": [
+    "basic mobs",
+    "basic mob AI controllers / planning subtrees (respond_to_summon, salute_authority, use_mob_ability/random_honk, find_patrol_beacon)",
+    "mob cooldown actions (datum/action/cooldown/mob_cooldown)",
+    "crafting recipes (CheckParts/parts)",
+    "reagents (create_reagents)",
+    "traits (TRAIT_RESEARCH_SCANNER)",
+    "emote messages / visible_message",
+    "blackboard keys (BB_HONK_ABILITY)"
+  ],
+  "data_only_parts": [
+    "The crafting recipe stat block (reqs, parts, time, category, result).",
+    "The AI controller planning_subtrees list.",
+    "The chirp action's name, desc, button icons, cooldown_time and click_to_activate flag.",
+    "Bot name/desc/gender/icon/base_icon_state/bot_type/ai_controller declarations."
+  ],
+  "logic_parts": [
+    "Initialize: create_reagents(30), instantiate/grant the chirp action, wire the post-honk callback and blackboard key.",
+    "on_chirped: visible_message + 5% prob roll that breaks the buzzer.",
+    "add_soda_overlay: locate or create the soda can in contents and add a mutable_appearance overlay.",
+    "CheckParts: add the soda overlay after construction parts are assigned.",
+    "chirp Activate: playsound, invoke post_honk_callback, StartCooldown.",
+    "chirp IsAvailable/break_buzzer/Destroy: gate availability on buzzer_broken and null the callback on destroy.",
+    "examine override adding the reagent-injection notice for research scanner holders."
+  ],
+  "byond_specific": [
+    "mutable_appearance + add_overlay on the mob.",
+    "icon/icon_state referencing .dmi sprite files.",
+    "CALLBACK/PROC_REF wiring.",
+    "visible_message / to_chat / span_* macros.",
+    "playsound proc.",
+    "prob() chance roll."
+  ],
+  "complexity": "medium",
+  "portability": "yes",
+  "port_notes": "This is a mostly self-contained NPC that maps cleanly to SS14: the mob becomes an entity prototype with a Sprite, a container/solution for the injected reagents, and an NPC component; the AI subtrees map to an NPC behaviour system (Utility/HTN or a blackboard-driven FSM); the chirp becomes an Action or an NPC ability invoked on a timer. The crafting recipe translates to a Construction/recipe prototype, and the soda-can overlay maps to a visual layer or a sprite-overlay component. Design questions a human must answer: whether the internal soda can should be a real spawned entity or a stored prototype, how reagent injection is exposed (interaction verb/UI) versus the BYOND trait check, and whether the 5% buzzer break should be a random server event or a data-driven chance.",
+  "_files": [
+    "code/modules/mob/living/basic/bots/soda_robot.dm"
+  ],
+  "_dm_lines": 99
+}

@@ -1,0 +1,79 @@
+{
+  "feature": "alligator",
+  "one_line": "A hostile space alligator basic mob that bites, knocks people down, and grabs downed victims to death-roll and rip off their legs.",
+  "player_facing_mechanics": [
+    "Sentient/controlled alligator can vent-crawl anywhere at will (TRAIT_VENTCRAWLER_ALWAYS), and is told via chat it can open/close its mouth with combat mode",
+    "Bites with a 1.5s melee cooldown dealing 5-10 damage with a bite sound and bite visual effect",
+    "First hits apply stamina damage (5, then 3) to a standing human; once stamina loss exceeds ~8 the victim is knocked down (SHOVE_KNOCKDOWN_SOLID)",
+    "Against a lying-down human with legs and gravity, performs a death roll: buckles the victim, spins both sprites, then severs one leg (removing shoes first) after the animation",
+    "Death roll has a cooldown (animation length + 1.5s) and refuses without gravity, if on cooldown, if target is elevated and alligator is not, or if the target has no legs",
+    "Ripped-off leg disappears into the alligator and has an 80% chance to be recoverable/thrown out if the alligator is gibbed",
+    "Butchering yields one gator cloak and two meat slabs",
+    "Alligator is a hostile spawn from gold cores",
+    "1% of alligators spawn as a 'floppy disk' variant whose diet includes the nuclear authentication disk (and its description gains a floppy-disk line)",
+    "Non-sentient alligator visibly opens its mouth (icon_state croc_open) when it has an AI target or is moving; controlled one opens mouth when in combat mode"
+  ],
+  "content_types": [
+    "mob",
+    "item",
+    "infrastructure"
+  ],
+  "type_paths": [
+    "/mob/living/basic/alligator",
+    "/mob/living/basic/alligator/croc",
+    "/datum/ai_controller/basic_controller/alligator",
+    "/datum/targeting_strategy/alligator",
+    "/datum/ai_planning_subtree/simple_find_target/if_hungry",
+    "/datum/ai_planning_subtree/find_food/if_hungry"
+  ],
+  "tg_systems_used": [
+    "basic mob AI (ai_controller, blackboard, ai_movement, idle_behavior, planning_subtrees)",
+    "targeting strategy datums (can_attack override)",
+    "elements/components (AddElement /datum/element/basic_eating, /datum/element/ai_retaliate)",
+    "signals (RegisterSignal/UnregisterSignal: COMSIG_MOB_ATE, COMSIG_LIVING_GIBBED, COMSIG_MOVABLE_MOVED, COMSIG_ATOM_PRE_DIR_CHANGE, COMSIG_PRE_LYING_ANGLE_CHANGE)",
+    "traits (ADD_TRAIT, add_traits/remove_traits, TRAIT_VENTCRAWLER_ALWAYS, TRAIT_CANNOT_BE_UNBUCKLED, TRAIT_INCAPACITATED, TRAIT_IMMOBILIZED, TRAIT_FLOORED, TRAIT_HANDS_BLOCKED, TRAIT_GODMODE, TRAIT_ELEVATED_TURF)",
+    "cooldown macros (COOLDOWN_DECLARE/COOLDOWN_START/COOLDOWN_FINISHED)",
+    "buckling system (buckle_mob/unbuckle_mob)",
+    "bodyparts & dismemberment (obj/item/bodypart/leg, bodyparts list, dismember)",
+    "stamina/knockdown combat",
+    "factions (FACTION_LIZARD, faction_check)",
+    "butcher_results loot",
+    "gold core hostile spawning (gold_core_spawnable)",
+    "mob biotypes / mob_size",
+    "combat_mode flag",
+    "ventcrawler login notification"
+  ],
+  "data_only_parts": [
+    "Stat/visual overrides: name, desc, icon + icon_state/icon_living/icon_dead, mob_biotypes, mob_size, health/maxHealth, melee_attack_cooldown, combat_mode, obj_damage, melee_damage_lower/upper, attack_sound, attack_vis_effect, attack_verb_continuous/simple, faction list, gold_core_spawnable, butcher_results",
+    "desired_food and desired_food_floppy static diet lists",
+    "AI blackboard defaults (BB_TARGETING_STRATEGY path, BB_NEXT_EAT_HUNT) and planning_subtrees ordering",
+    "ai_movement = /datum/ai_movement/basic_avoidance and idle_behavior = /datum/idle_behavior/idle_random_walk selection"
+  ],
+  "logic_parts": [
+    "check_death_roll: gravity, cooldown, elevation and remaining-legs gating",
+    "death_roll: facing/matrix rotation setup, buckling victim, applying traits, removing shoes, delayed leg dismemberment + 80% internal storage of limb",
+    "reset_victim: unbuckle, remove traits, restore transform/pixel offsets and overlays",
+    "UnarmedAttack: stamina-damage escalation and knockdown before eating/melee",
+    "on_mob_ate / on_gibbed / on_moved / on_dir_change / on_lying_angle_change signal handlers",
+    "AI on_ate_food blackboard reset (hunt cooldown, clear target/food)",
+    "/datum/targeting_strategy/alligator/can_attack full validity/leg-targeting logic",
+    "if_hungry SelectBehaviors gating on BB_NEXT_EAT_HUNT vs world.time"
+  ],
+  "byond_specific": [
+    "spawn(ANIMATION_TIME) fire-and-forget delayed proc for the leg rip",
+    "animate() with ANIMATION_END_NOW/CONTINUE and matrix().Turn(degrees) for the death-roll spin of both mob sprites",
+    "icon_state-driven animation states (croc/croc_open/croc_south/east/north/west/croc_dead)",
+    "pixel_x / pixel_y manipulation and SET_BASE_PIXEL(-9, -9) sprite offsets",
+    "to_chat(src, ...) sentient-mob chat and notify_ventcrawler_on_login client-login hook",
+    "dir manipulation for facing during the roll",
+    "world.time based timing for hunt cooldown"
+  ],
+  "complexity": "medium",
+  "portability": "partial",
+  "port_notes": "Most stat/visual/loot fields map cleanly to an SS14 entity prototype plus a MobThresholds/MeleeWeapon/Butchering components block, but the interactive death-roll needs real code: a dedicated component (storing eating/victim/roll-cooldown state) and a system that handles the combat-mode action, stamina/knockdown gating, DoAfter/parallel animation, and limb dismemberment via BodyPart events. SimpleMob AI maps from ai_controller/planning_subtrees/targeting_strategy to HTN or NPC-faction/world-targeting systems with a custom target filter. BYOND sprites (matrix turn animation, pixel offsets, icon_state mouth states) become SS14 sprite-layer + Appearance/animation work. Design questions a human must answer: how to represent the victim-attached roll state in ECS (component on alligator vs the human), whether to keep the sprite-rotation/pixel fidelity, and how the 1% nuclear-disk diet variant should be authored (random prototype spawn vs component).",
+  "_files": [
+    "code/modules/mob/living/basic/alligator.dm",
+    "code/modules/mob/living/basic/alligator_ai.dm"
+  ],
+  "_dm_lines": 389
+}

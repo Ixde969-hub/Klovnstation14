@@ -1,0 +1,72 @@
+{
+  "feature": "wizard_crayon",
+  "one_line": "A magical crayon that lets a player draw colourful, reusable magical stencil decals (bounce pads, light, fentanyl gas, whoopee cushion, landmine, spinner) on floors, up to 15 drawings.",
+  "player_facing_mechanics": [
+    "Use the crayon on a valid open floor turf to draw the currently selected stencil (2 second do_after, no drawing if floor already has a wizcrayon decal or the target isn't an open floor)",
+    "Left-click/UI choose the paint colour (Red, Orange, Yellow, Green, Blue, Purple) which tints the drawn decal",
+    "Right-click/UI choose the ruin (stencil) type from all /obj/effect/decal/cleanable/wizcrayon subtypes",
+    "Crayon has 15 total uses and is destroyed when the last use is spent",
+    "UI shows remaining uses as a percentage",
+    "flip decal: anything crossing it gets a spin animation and a cartoon boing sound",
+    "spore decal: crossing carbon mobs get drugginess, dizziness and confusion for 10-20 seconds and a lucid smell message (only if not already drugged/stat)",
+    "fart decal: crossing it plays a fart sound, then goes on a 15 second cooldown before it can fire again",
+    "glow decal: emits a light (range 3, power 5) tinted by the drawn colour",
+    "boom decal: living mobs of at least human size crossing get sparks, a colour wash and a message, then the decal destroys itself after 6 ticks",
+    "spin decal: mobs crossing it are spun (10 spins) with a woink sound"
+  ],
+  "content_types": [
+    "item",
+    "other"
+  ],
+  "type_paths": [
+    "/obj/item/toy/wizcrayon",
+    "/obj/effect/decal/cleanable/wizcrayon",
+    "/obj/effect/decal/cleanable/wizcrayon/flip",
+    "/obj/effect/decal/cleanable/wizcrayon/spore",
+    "/obj/effect/decal/cleanable/wizcrayon/fart",
+    "/obj/effect/decal/cleanable/wizcrayon/glow",
+    "/obj/effect/decal/cleanable/wizcrayon/boom",
+    "/obj/effect/decal/cleanable/wizcrayon/spin"
+  ],
+  "tg_systems_used": [
+    "custom SSfrogui HTML UI framework (ui_interact/ui_data/frog_ui_topic, SSfrogui.open_ui/update_ui/atom_close_uis)",
+    "signal subsystem (RegisterSignal/UnregisterSignal, COMSIG_MOVABLE_CROSS)",
+    "do_after (2 SECONDS)",
+    "status effects (drugginess) and set_drugginess/set_dizzy/set_confusion",
+    "atom colour washing (add_atom_colour, WASHABLE_COLOUR_PRIORITY)",
+    "lighting (set_light)",
+    "turfs/decals and contents lookup (locate in turf contents)",
+    "SpinAnimation/spin, flick, playsound",
+    "addtimer/CALLBACK"
+  ],
+  "data_only_parts": [
+    "name/desc/icon/icon_state and w_class stat overrides on the crayon and every decal subtype",
+    "the paint colour table (name -> COLOR_CRAYON_* constant)",
+    "the stencil-name-to-type mapping (derived from subtypesof at runtime)",
+    "per-decal metadata like the fart cooldown duration and the boom destruction delay",
+    "the TOTAL_USES/uses/percent constants"
+  ],
+  "logic_parts": [
+    "isValidSurface checks (open floor turf, no existing wizcrayon decal)",
+    "use_on: do_after, spawn the selected decal, apply active_color, decrement uses, destroy at zero, recompute percent and refresh UI",
+    "frog_ui_topic: handling ready/active_color_name/active_ruin_name href actions",
+    "create_ui: reading the HTML file and building the colour/stencil alists",
+    "drawing_crossed handlers for each subtype (flip, spore, fart + its reset timer, boom + its timed Destroy, spin)",
+    "glow Initialize lighting",
+    "Destroy cleanup (UnregisterSignal, closing UIs)"
+  ],
+  "byond_specific": [
+    "Custom SSfrogui HTML UI built from file2text('surfshack13/frogui/wizcrayon.html') and driven by href topic callbacks (frog_ui_topic / ui_interact / ui_data)",
+    "BYOND static alist fields (paint_colors, stencil_buttons, ui)",
+    "DMI icon files and flick() icon_state animation frames",
+    "BYOND signal registration on the movable crossing (COMSIG_MOVABLE_CROSS)"
+  ],
+  "complexity": "medium",
+  "portability": "partial",
+  "port_notes": "The drawing behaviour and per-decal on-cross effects port cleanly to SS14 components/systems: the crayon becomes an item with a DrawDecal component and an Action/verb-driven colour+stencil picker UI, and each stencil becomes a prototype entity plus a component reacting to a step/collision event, using DoAfter for the 2s draw and a light component for the glow decal. The main work is replacing the custom SSfrogui href UI with a proper UI system (or an Action menu / radial) and modelling the 'no existing decal here' placement rule as a tile check. Design questions: whether magic drawings should be a full custom grid/tile-overlay system vs. free-placed decals, how to preserve the reusable multi-use crayon durability, and whether each stencil's effect should be a distinct component (recommended) or one data-driven system.",
+  "_files": [
+    "code/objects/items/wizcrayon.dm",
+    "code/objects/decals/wizcrayon_decals.dm"
+  ],
+  "_dm_lines": 246
+}

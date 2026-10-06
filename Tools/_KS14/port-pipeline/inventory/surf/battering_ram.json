@@ -1,0 +1,71 @@
+{
+  "feature": "battering_ram",
+  "one_line": "A huge two-handed ram that a player can equip, wind up, and swing to demolish airlocks and knock people over, insulating the wielder from airlock shocks while held.",
+  "player_facing_mechanics": [
+    "Pick up and carry/wield a huge two-handed item (back slot, slows movement and dragging while held)",
+    "Swing requires a two-hand wield and a wind-up animation/sound before each strike, interruptible",
+    "Deals high brute damage (20 wielded, 5 unwielded) with extra wound bonus and strong structure/airlock demolition (demolition_mod 3, ~9 hits per airlock)",
+    "Wielding it grants immunity to airlock shocks; dropping it removes that immunity",
+    "Hitting a standing, unanchored mob throws them one tile; in zero gravity the user is thrown back instead",
+    "Hitting with it costs the user stamina loss (9) each swing",
+    "Attacking an open door knocks the user down and throws them into it with a message",
+    "Clumsy users have a 30% chance to slip and be knocked down when swinging",
+    "Nearby bystanders within 2 tiles get a camera shake on impact",
+    "Throwing it deals 14 throwforce over a range of 2",
+    "Suicide action (BRUTELOSS) with a custom verb-based message"
+  ],
+  "content_types": [
+    "item"
+  ],
+  "type_paths": [
+    "/obj/item/batteringram",
+    "/datum/armor/item_batteringram"
+  ],
+  "tg_systems_used": [
+    "two-handed component (/datum/component/two_handed)",
+    "signals (COMSIG_ITEM_EQUIPPED, COMSIG_ITEM_DROPPED) and RegisterSignal/UnregisterSignal",
+    "traits (TRAIT_AIRLOCK_SHOCKIMMUNE, TRAIT_CLUMSY) with ADD_TRAIT/REMOVE_TRAIT/HAS_TRAIT",
+    "do_after / action cooldown timing (wind-up)",
+    "stamina system (adjustStaminaLoss) and knockdown (Knockdown)",
+    "throwing/movement (safe_throw_at, get_step/get_dir, has_gravity)",
+    "/datum/armor datum (armor_type)",
+    "item combat stats (demolition_mod, wound_bonus, throwforce, slowdown, drag_slowdown, w_class, item_flags)",
+    "feedback procs (visible_message, to_chat, balloon_alert, playsound, shake_camera)"
+  ],
+  "data_only_parts": [
+    "icon / icon_state / base_icon_state / lefthand_file / righthand_file",
+    "name, desc",
+    "w_class = WEIGHT_CLASS_HUGE, slot_flags = ITEM_SLOT_BACK, resistance_flags = FIRE_PROOF, item_flags (SLOWS_WHILE_IN_HAND | IMMUTABLE_SLOW)",
+    "/datum/armor/item_batteringram fire/bomb/acid values",
+    "demolition_mod, wound_bonus, bare_wound_bonus, throwforce, slowdown, drag_slowdown, throw_range",
+    "attack_verb_continuous / attack_verb_simple lists",
+    "hitsound, pickup_sound, drop_sound, sound_vary",
+    "default force_unwielded / force_wielded values and two_handed require_twohands/icon_wielded wiring"
+  ],
+  "logic_parts": [
+    "Initialize: adding the two_handed component and registering equip/drop signals",
+    "check_add_insulated / check_remove_insulated signal handlers granting/removing TRAIT_AIRLOCK_SHOCKIMMUNE only when equipped in hands",
+    "pre_attack wind-up: action check (can_perform_action), swung guard flag, visible message + sound, 0.5s do_after with interrupted balloon alert",
+    "attack: throw logic for unanchored standing mobs, zero-gravity user recoil, spin on throw",
+    "afterattack: stamina loss, open-door knockdown/throw, bystander camera shake in 2-tile range, clumsy 30% slip-and-throw",
+    "suicide_act custom message and BRUTELOSS return",
+    "update_icon_state base-state handling",
+    "Destroy: unregistering signals"
+  ],
+  "byond_specific": [
+    "shake_camera() applied via urange over bystanders (client visual effect)",
+    "playsound() with vary/ignore_walls args",
+    "visible_message / to_chat / balloon_alert feedback procs",
+    "span_* macros (span_warning, span_userdanger, span_suicide) for chat markup",
+    "prob() randomness (clumsy slip, random attack verb via pick()",
+    "icon_state / base_icon_state in-hand sprite conventions",
+    "p_them()/p_theyre() pronoun helpers"
+  ],
+  "complexity": "simple",
+  "portability": "yes",
+  "port_notes": "This is a single self-contained melee item and maps cleanly: an ItemComponent with MeleeWeapon/DamageOtherOnHit stats, a TwoHanded/HandHeldComponent equivalent, a WieldableComponent, and an ItemToggle or actions system for the wind-up. The equip/drop signal handlers become a component that subscribes to equipment events and applies/removes an immunity status effect or mob trait (shock immunity), and the wind-up becomes a DoAfter with its own cancellation event. The quirky physics (throw-on-hit, zero-g recoil, clumsy self-throw) and the open-door knockdown need a human to decide whether they belong in a dedicated BatteringRamSystem or in generic melee/projectile-throw systems; the referenced /obj/structure/fireaxecabinet/batteringram variant is not defined in this file and must be sourced separately. Balance values (demolition_mod, wound bonus, slowdown, stamina cost) are pure data and belong in YAML prototypes.",
+  "_files": [
+    "code/game/objects/items/battering_ram.dm"
+  ],
+  "_dm_lines": 139
+}

@@ -1,0 +1,72 @@
+{
+  "feature": "bowling",
+  "one_line": "Players buy bowling gear, wear pro jersey/shoes, place bowling pins on the floor, and throw a heavy colorful bowling ball to knock pins (or standing people) down.",
+  "player_facing_mechanics": [
+    "Wear bowling shoes for a movement speed boost (slowdown -0.3)",
+    "Wear the bowling jersey to enable 'pro' bowling power on thrown balls while a uniform is worn",
+    "Throw the bowling ball (range 150) with a spinning sprite and bowling sound",
+    "Ball gains 10% chance to knock down/knockback a standing carbon on impact even without pro jersey",
+    "Ball deals bonus effects on pin/kid hits: knockdown 60 and +15 brute (plus throwforce 10)",
+    "Ball knocks over placed bowling pins on crossing, playing a one-shot hit sound per throw",
+    "Place bowling pins on a clear floor tile via item interaction; they stand up with pixel offset and a glass sound",
+    "Standing pins topple when a non-flying mob larger than small crosses them, when a bowling ball crosses them, or when a dense object crosses",
+    "Pins topple if moved or picked up while standing",
+    "Commit suicide with the ball to launch yourself into a wall and gib",
+    "Buy a contraband 'Bowling Crate' from cargo containing 4 balls, 3 pin sets, and a margherita pizzabox"
+  ],
+  "content_types": [
+    "item",
+    "structure",
+    "other"
+  ],
+  "type_paths": [
+    "/obj/item/clothing/shoes/bowling",
+    "/obj/item/clothing/under/bowling_jersey",
+    "/obj/item/bowling_ball",
+    "/obj/item/bowling_pins",
+    "/datum/supply_pack/imports/bowling_kit"
+  ],
+  "tg_systems_used": [
+    "supply packs / cargo imports",
+    "signals (COMSIG_MOVABLE_CROSS, COMSIG_MOVABLE_MOVED, PROC_REF/SIGNAL_HANDLER)",
+    "traits (TRAIT_UNCATCHABLE via ADD_TRAIT)",
+    "item_interact (interact_with_atom / ITEM_INTERACT_SUCCESS)",
+    "throwing system (throw_at, throw_impact, ThrownThing, callback)",
+    "obj/item suicide_act",
+    "mob status/combat helpers (Knockdown, adjustBruteLoss, gib)",
+    "clothing slowdown and slot_flags (ITEM_SLOT_HEAD, body_parts_covered)",
+    "Initialize() and color randomization",
+    "sound (playsound) and icon-state assets"
+  ],
+  "data_only_parts": [
+    "bowling shoes stats (slowdown, description, icons, worn state)",
+    "bowling jersey stats (icons, description)",
+    "bowling ball base stats (force, throwforce, throw_range, throw_speed, weight class, slot flags, body_parts_covered, inhand/worn icons)",
+    "bowling pins base stats (icons, name, description)",
+    "supply pack definition (cost CARGO_CRATE_VALUE*15, contraband flag, contained items)",
+    "random color palette list for balls"
+  ],
+  "logic_parts": [
+    "bowling_ball/Initialize color picking + adding TRAIT_UNCATCHABLE",
+    "bowling_ball/throw_at override: carbon thrower check, spin sprite state, bowl sound, jersey/w_uniform pro_wielded check, target retargeting to edge turf, range 150, play_pin_sound_on_hit flag",
+    "bowling_ball/throw_impact: sprite reset, pro/10% proc, standing-carbon knockdown + 15 brute",
+    "bowling_ball/knocked_pin: one-shot hit sound guard",
+    "bowling_ball/suicide_act + on_body_hit callback: throw self, gib user",
+    "bowling_pins/interact_with_atom: floor tile + no-density check, move, toggle standing",
+    "bowling_pins/toggle_standing: icon swap, pixel offset, register/unregister CROSS/MOVED signals",
+    "bowling_pins/on_entered handler: topple on mob movement (not airborne, size > small), topple on bowling_ball (calls knocked_pin), topple on dense obj",
+    "bowling_pins/on_moved handler: topple when moved"
+  ],
+  "byond_specific": [
+    "No verbs, client procs, browse(), topic calls, or external servers used",
+    "Relies on BYOND atom movement signals and icon/pixel rendering for spin and pin visuals",
+    "Depends on external DMI/sound assets under surfshack13/icons and surfshack13/sound"
+  ],
+  "complexity": "medium",
+  "portability": "yes",
+  "port_notes": "An SS14 port would be mostly YAML prototypes: bowling ball/pins/shoes/jersey items plus a cargo crate (CargoProduct/Bounty or the trading/imports system), with the jersey/shoes being clothing prototypes granting a movement speed modifier and a 'pro bowl' tagging component. The interactive parts map to a ThrownItemComponent/throw-impact hook (or a custom BowlingBallSystem) that checks the thrower's worn uniform for a ProBowl marker, applies Knockdown + brute DamageSpecifier, and emits an impact sound; pins would be an entity with a placed/standing state using CollisionStart/Cross events (or a PinsComponent with a standing field and signal subscriptions) to topple and fire a one-shot sound. Design questions to answer: whether 'pro' should be a component flag vs. an item tag/marker on the jersey, how to model the single-per-throw hit-sound guard, whether to keep the suicide gib interaction, and tuning of the contraband cargo price and the 150-tile throw range.",
+  "_files": [
+    "code/modules/sports/bowling.dm"
+  ],
+  "_dm_lines": 160
+}

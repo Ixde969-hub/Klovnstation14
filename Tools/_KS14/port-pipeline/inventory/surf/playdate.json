@@ -1,0 +1,52 @@
+{
+  "feature": "playdate",
+  "one_line": "Admins can schedule a date and time for an upcoming play session, which is shown on the BYOND hub status line so players know when the server will next be active.",
+  "player_facing_mechanics": [
+    "See the scheduled play session date/time rendered in the server status (BYOND hub) text",
+    "Open a link to view the scheduled time converted to the viewer's local timezone",
+    "Admins can open a date-picker UI to set the playtime (no direct player action otherwise)"
+  ],
+  "content_types": [
+    "admin_tool",
+    "ui",
+    "infrastructure"
+  ],
+  "type_paths": [
+    "/world/proc/add_playdate()",
+    "/datum/admin_verb/schedule_playtime",
+    "/datum/admin_verb/schedule_playtime/frog_ui_topic()"
+  ],
+  "tg_systems_used": [
+    "admin verbs (ADMIN_VERB macro / admin datums)",
+    "global vars (GLOBAL_VAR)",
+    "world status / update_status hub subsystem",
+    "message_admins logging",
+    "custom frogui UI framework (SSfrogui) with an HTML datepicker",
+    "UI topic handling (frog_ui_topic)"
+  ],
+  "data_only_parts": [
+    "GLOBAL_VAR(playdate_time) default/empty state",
+    "ADMIN_VERB metadata for schedule_playtime (category R_FUN, ADMIN_CATEGORY_SERVER)",
+    "The datepicker.html form asset selecting a datetime string"
+  ],
+  "logic_parts": [
+    "Parsing the ISO-like datetime string (year/month/day/hour/min) and computing weekday via iso_to_weekday/day_of_month",
+    "Building the AM/PM hour conversion and player-facing status string (with localtime link)",
+    "Updating the world/hub status after the admin confirms the date",
+    "message_admins notification on status refresh"
+  ],
+  "byond_specific": [
+    "world proc override (/world/proc/add_playdate) and world.update_status() hub status text",
+    "BYOND text procs: text2num, copytext, iso_to_weekday, day_of_month",
+    "ADMIN_VERB macro system and admin verb datums",
+    "HTML hyperlink embedded in status text pointing at external https://forgman6.github.io/?isoString=... service",
+    "SSfrogui.open_ui/close_ui with HTML file2text and topic (href_list) handling"
+  ],
+  "complexity": "data",
+  "portability": "infrastructure_only",
+  "port_notes": "SS14 has no direct equivalent of BYOND's hub status text, so the core value (advertising a next-session time on the server browser) must be re-thought rather than ported one-to-one. A port would add a small server-side component/system holding the scheduled DateTime plus an admin command or console-accessible setter, and surface it via lobby/round-end UI, chat announcements, or Discord/gateway instead of hub status. The admin workflow maps to an admin command with a TGUI DateSelector/dialog rather than a frogui HTML form. Design questions: whether 'scheduled playtime' is meaningful in SS14's server listing, where the time should be displayed to players, and whether the external local-time link (forgman6.github.io) is acceptable to depend on.",
+  "_files": [
+    "code/modules/playdate/playdate.dm"
+  ],
+  "_dm_lines": 35
+}

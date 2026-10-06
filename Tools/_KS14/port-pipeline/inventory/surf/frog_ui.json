@@ -1,0 +1,61 @@
+{
+  "feature": "frog_ui",
+  "one_line": "A lightweight experimental HTML/CSS/JS window UI framework that lets atoms open browser panels which auto-close when the player walks away.",
+  "player_facing_mechanics": [
+    "Open a custom HTML window tied to a specific atom (machine/structure/etc.)",
+    "Interact with buttons/widgets in the window that send topic messages back to the game",
+    "Receive live data updates pushed into an already-open window (update_ui / browser:update)",
+    "Window automatically closes when the player moves out of adjacency range of the source atom",
+    "Window closes when the player clicks its close button (client verb frogui_close)",
+    "Atoms that opt into FROG_UI_IGNORE_PROXIMITY stay open regardless of distance",
+    "Only one frogUI window per source atom per client"
+  ],
+  "content_types": [
+    "ui",
+    "infrastructure"
+  ],
+  "type_paths": [
+    "/datum/controller/subsystem/frogui",
+    "/client/verb/frogui_close",
+    "/datum/proc/frog_ui_topic"
+  ],
+  "tg_systems_used": [
+    "subsystems (SSfrogui, fire loop, runlevels)",
+    "signals (RegisterSignal/UnregisterSignal on COMSIG_TOPIC)",
+    "topic/href handling (source.frog_ui_topic, href_list)",
+    "browse windows / winset",
+    "client verbs",
+    "adjacency / UI status checks (ui_status_user_is_adjacent, default_can_use_topic)",
+    "custom alternative to TGUI"
+  ],
+  "data_only_parts": [
+    "The bitflags FROG_UI_IGNORE_PROXIMITY and FROGUI_NO_TOPIC in code/__DEFINES/frog_ui.dm",
+    "The external CSS/JS asset surfshack13/frogui/ui.css that gets sent via browse_rsc"
+  ],
+  "logic_parts": [
+    "SSfrogui.fire() proximity-based auto-close loop over atom_ui_clients",
+    "open_ui() registering client/atom alists and injecting the source ref into the markup",
+    "on_topic() validating client ownership and proximity before dispatching to frog_ui_topic",
+    "close_ui()/atom_close_uis() list cleanup and signal teardown",
+    "update_ui() encoding and pushing data to the browser window",
+    "/datum/proc/frog_ui_topic() base dispatch proc"
+  ],
+  "byond_specific": [
+    "client << browse() / browse(null) and browse_rsc for the CSS asset",
+    "winset() on-close wiring and bare window name usage",
+    "client << output(message, \"[ref].browser:update\")",
+    "/client/verb/frogui_close (hidden verb invoked from JS)",
+    "ref()/locate() for window identity",
+    "json_encode / url_encode",
+    "replacetextEx placeholder substitution",
+    "COMSIG_TOPIC signal and alist() container"
+  ],
+  "complexity": "simple",
+  "portability": "infrastructure_only",
+  "port_notes": "This is a bespoke browser-window UI bridge, not game content, so an SS14 port means reimplementing the intent on top of the existing Bound User Interface stack (UiSystem / SharedUserInterfaceComponent, ui keys, BoundUIState, UiMessage handlers) rather than translating this code directly. The auto-close-on-distance behaviour maps to a system that checks UI range each tick or on movement and closes the UI when the user leaves range (EntityLookupSystem / TransformSystem range check, or a component holding an ignore-proximity flag). The 'only one UI per atom per client' and multi-client-per-atom bookkeeping maps to the per-entity UI registry already in UiSystem, and update_ui becomes a state change pushed via the UI system rather than browser:update. A human must decide whether to keep the flag semantics (ignore proximity, no-topic/no-input windows), whether the raw HTML/CSS approach is worth preserving versus standard XAML BUI, and whether the single-UI-per-atom restriction is a design requirement or just a prototype limitation.",
+  "_files": [
+    "code/modules/frog_ui/frog_ui.dm",
+    "code/__DEFINES/frog_ui.dm"
+  ],
+  "_dm_lines": 148
+}

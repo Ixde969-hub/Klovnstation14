@@ -1,0 +1,70 @@
+{
+  "feature": "client_prefs_ooc",
+  "one_line": "It gives a player a persistent profile layer for OOC identity \u2014 a country flag next to chat derived from their IP plus database-stored metacoins (Doubloons) and a purchased/cosmetic inventory.",
+  "player_facing_mechanics": [
+    "An OOC country flag is shown for a player, derived from their IP's geolocation (with Scotland/Wales/Quebec region special-casing on top of country code).",
+    "The flag appears in chat via a spritesheet icon tag, falling back to a 'flag-unknown' icon when the country has no asset.",
+    "A persistent metacoins ('Doubloons') balance is loaded per player from the database and shown in chat as deposits/withdrawals.",
+    "Doubloon changes can be announced with a reason (e.g. 'Doubloons deposited to your account! Reason: ...').",
+    "A per-shift earning cap (max_round_coins) limits how many Doubloons can be gained, with a 'Doubloon limit for this shift' message when hit.",
+    "A player can possess an inventory of purchased cosmetic items, loaded from a metacoin_item_purchases table.",
+    "Store cart / loadout items are tracked per player, with special handling categories 'unusual', 'single-use', and 'generic'."
+  ],
+  "content_types": [
+    "ui",
+    "infrastructure",
+    "other"
+  ],
+  "type_paths": [
+    "/datum/preferences",
+    "/datum/db_query",
+    "/datum/asset/spritesheet/chat",
+    "/client"
+  ],
+  "tg_systems_used": [
+    "preferences system",
+    "SSdbcore (MySQL database subsystem)",
+    "SQL queries / db_query",
+    "assets subsystem (datum/asset/spritesheet)",
+    "logging subsystem (LOG_CATEGORY_ECONOMY)",
+    "timer subsystem (addtimer/CALLBACK)",
+    "economy/currency (metacoins/Doubloons)",
+    "chat output (to_chat, span_dabloon)"
+  ],
+  "data_only_parts": [
+    "/datum/preferences var storecart_list (assoc list of typepaths to item info)",
+    "/datum/preferences var special_loadout_list (indexed 'unusual' / 'single-use' / 'generic' lists)",
+    "/datum/preferences var needs_update",
+    "/datum/preferences var inventory (list of items)",
+    "/datum/preferences var metacoins",
+    "/datum/preferences var max_round_coins = 1000",
+    "DB schema/table/column references: metacoin_item_purchases(item_id, amount), player(metacoins, ckey)"
+  ],
+  "logic_parts": [
+    "/proc/ip2country \u2014 HTTP geolocation lookup and country_flag assignment with region special-casing",
+    "/proc/country2chat_flag \u2014 resolves a country to a chat spritesheet flag icon tag with unknown fallback",
+    "/datum/preferences/proc/load_inventory \u2014 builds inventory from DB purchase rows via text2path",
+    "/datum/preferences/proc/load_metacoins \u2014 reads metacoins from the player table (defaults to 100 when DB unavailable/mockclient)",
+    "/datum/preferences/proc/adjust_metacoins \u2014 round-cap enforcement, DB UPDATE, economy logging, and chat announcement",
+    "/datum/preferences/proc/has_coins \u2014 balance check"
+  ],
+  "byond_specific": [
+    "world.Export(\"http://ip-api.com/json/[ipaddr]\") to reach an external HTTP server",
+    "json_decode / html_decode / file2text on the returned CONTENT file handle",
+    "addtimer(CALLBACK(GLOBAL_PROC, GLOBAL_PROC_REF(ip2country), ...), 60 SECONDS) retry on rate-limit",
+    "get_asset_datum(/datum/asset/spritesheet/chat) and sheet.icon_tag() asset/icon-tag API",
+    "SSdbcore.NewQuery / warn_execute / NextRow / item DB-call API",
+    "to_chat, span_dabloon, text2path, text2num, logger.Log"
+  ],
+  "complexity": "medium",
+  "portability": "partial",
+  "port_key": null,
+  "port_notes": "The prefs/currency/inventory half maps cleanly to SS14 as a player-preference component plus a persisted (DB or server-storage) bank/inventory system, with an economy log category and a chat-visible balance event; the per-shift cap is a ruleset/round-scoped variable that could be a game-rule or round-state field. The country-flag half must be re-implemented: world.Export becomes a RobustToolbox HttpClient call to a Geo-IP service, and the chat flag becomes an overlay/chat-markup entry rather than a BYOND spritesheet icon_tag. SS14 currently has no first-class preferences subsystem, so a human must decide the persistence schema, DB access layer, and how flags are rendered in the chat UI. Design questions: anti-spoofing/accuracy and rate-limit handling for IP geolocation, privacy/consent for storing country data, and whether Doubloons belong in SS14's planned economy or a bespoke table.",
+  "_files": [
+    "code/modules/client/ooc_flags.dm",
+    "code/modules/client/persistent_client.dm",
+    "code/modules/client/preferences/inventory.dm",
+    "code/modules/client/preferences.dm"
+  ],
+  "_dm_lines": 116
+}

@@ -1,0 +1,83 @@
+{
+  "feature": "antag_spawner_and_roles",
+  "one_line": "A suspicious walkie-talkie item that instantly grants its user an antagonist role (or refunds premium currency if they can't be one), alongside the 'All-American' diner ghost-role spawners and the round-end credit/XP reward payout logic.",
+  "player_facing_mechanics": [
+    "Use a 'suspicious station bounced radio' (antag_maker) in hand to become an antagonist (traitor/heretic/brother/changeling/bloodsucker/spy/wizard/nukie/clown op depending on subtype)",
+    "If you already have an antag datum when using the radio, you are refunded metacoins (Doubloons) instead of gaining a role",
+    "If your assigned role is not antag-tokenable, you are refunded metacoins and cannot become the antag",
+    "The radio self-deletes (qdel) after one use and has a has_used exploit guard",
+    "Some antag_maker variants force-drop all your gear and paralyze you for 30 seconds before handing out the role (force_drop_equipment flag)",
+    "Ghost role: spawn as the All-American Chef via a sleeper pod, leading the kitchen (spawner_job /datum/job/ghostchef, outfit ghostchef)",
+    "Ghost role: spawn as the All-American Cook, subordinate to the chef",
+    "Ghost role: spawn as the All-American Regular, a stranded customer/fake health inspector carrying a briefcase",
+    "Chef spawner, on Destroy, drops a Cook spawner at its location (props propagate)",
+    "At round end, each player earns 100 Doubloons for 'Played a Round' and 25 for a desired Command/Security/Silicon role",
+    "Antagonists earn extra credit rewards for each completed objective (objective reward_for_completion / completion_credit_reward) plus a 100 Doubloon Greentext Bonus if all objectives complete",
+    "A station-goal completion bonus pays every joined player (pop >= 10) an equal share, 10 credits per crew capped at 500",
+    "Rewards are announced in chat and deposited via adjust_metacoins (no announcement for the bulk deposit)"
+  ],
+  "content_types": [
+    "item",
+    "mob",
+    "antagonist",
+    "infrastructure",
+    "other"
+  ],
+  "type_paths": [
+    "/obj/item/antag_maker (subtypes: /heretic, /brother, /changeling, /bloodsucker, /spy, /wizard, /nukie, /clown_op)",
+    "/obj/effect/mob_spawn/ghost_role/human/allamerican (subtypes /chef, /cook, /regular)",
+    "/datum/outfit/ghostchef (subtype /cook)",
+    "/datum/outfit/ghostregular",
+    "/datum/job/ghostchef, /datum/job/ghostcook, /datum/job/ghostregular",
+    "/datum/controller/subsystem/ticker procs: calculate_rewards, calculate_station_goal_bonus, distribute_rewards, distribute_rewards_to_client, calculate_rewards_for_client"
+  ],
+  "tg_systems_used": [
+    "antag datums (mind.add_antag_datum)",
+    "dynamic rulesets / antag tokens (role.antag_tokenable)",
+    "mind system (mind.antag_datums, mind.assigned_role)",
+    "mob_spawn / ghost_role spawners",
+    "jobs and outfits (spawner_job_path, outfit, id_trim)",
+    "preferences / persistent commerce currency (client.prefs.adjust_metacoins, Doubloons, persistent_client)",
+    "station goals subsystem (SSstation.get_station_goals)",
+    "objectives (mind.get_all_objectives, check_completion, reward_for_completion)",
+    "ticker subsystem (SSticker.round_start_time, roundend rewards)",
+    "departments bitflags (DEPARTMENT_BITFLAG_COMMAND/SECURITY/SILICON)",
+    "chat/admin messaging (to_chat, spans, message_admins, log_game)"
+  ],
+  "data_only_parts": [
+    "All antag_maker name/desc/icon/inhand fields and per-subtype provided_antag_datum + refund_amount overrides",
+    "Ghost spawner name/desc/prompt_name/you_are_text/flavour_text/important_text/icon/icon_state",
+    "spawner_job_path and outfit assignments on each ghost spawner",
+    "Outfit definitions (uniform/suit/head/shoes/id_trim/r_hand item paths) for ghostchef, ghostchef/cook, ghostregular",
+    "ROLE_GHOST_CHEF / ROLE_GHOST_COOK / ROLE_GHOST_REGULAR defines and /datum/job titles",
+    "Fixed reward numbers: 100 round-end bonus, 25 desired-role bonus, 100 greentext bonus, station-goal 10/crew with 500 cap, pop>=10 gate"
+  ],
+  "logic_parts": [
+    "antag_maker/attack_self: null-user guard, existing-antag-datum refund path, antag-tokenable check, force-drop + 30s Paralyze, has_used gating, add_antag_datum, qdel",
+    "allamerican/chef/Destroy spawning a /cook spawner at drop_location()",
+    "calculate_rewards loop over GLOB.clients and station goal bonus aggregation (unique_list, lazy lists)",
+    "calculate_rewards_for_client: newplayer/lobby filtering, department bitflag bonus, per-objective credit rewards, greentext all-objectives-complete check",
+    "distribute_rewards time math and distribute_rewards_to_client per-reason messages + single batched adjust_metacoins call"
+  ],
+  "byond_specific": [
+    "attack_self() obj verb-style proc (in-hand activation)",
+    "qdel(src) on the item and Destroy() ordering (return ..())",
+    "owner.Paralyze(30 SECONDS) and the SECONDS macro",
+    "client/client casting, owner.client.prefs.adjust_metacoins(ckey, ...)",
+    "world.time / SSticker.round_start_time arithmetic for hour/minute XP scaling (minute ** 0.85)",
+    "GLOB.clients, GLOB.directory, GLOB.joined_player_list, LAZYINITLIST",
+    "isnewplayer(), QDELING(), istype() checks",
+    "span_rose/span_bold to_chat output, message_admins/log_game",
+    "list(list(amount, reason)) reward tuple format",
+    "type-path string vars used as soft references (provided_antag_datum, spawner_job_path, outfit)"
+  ],
+  "complexity": "medium",
+  "portability": "partial",
+  "port_notes": "The antag_maker is straightforward to port as an entity with a component that, on use (interact/UseInHand or DoAfter), adds a role to the user's mind through SS14's role/gamerule-antagonist system rather than a BYOND antag datum; the refund-on-existing-antag and tokenable-role checks become system queries against the player's current roles. Ghost roles map cleanly to SS14 GhostRoleSpawnerComponent plus ghost-role jobs and loadouts (outfits -> startingGear/prototypes). The roundend reward proc has no direct analogue and would need a new round-end gamerule/system that iterates connected players, inspects their roles/objectives, and pays currency via an economy system. A human must decide how to model the persistent Doubloon/metacoin economy, whether objectives track completion credit in SS14's ObjectiveSystem, and whether the antag_maker should remain a consumable item or be replaced by an admin/dynamic-ruleset path.",
+  "_files": [
+    "code/modules/antagonists/_common/antag_spawner.dm",
+    "code/__DEFINES/roles.dm",
+    "code/__HELPERS/roundend.dm"
+  ],
+  "_dm_lines": 243
+}

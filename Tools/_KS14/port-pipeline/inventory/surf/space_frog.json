@@ -1,0 +1,74 @@
+{
+  "feature": "space_frog",
+  "one_line": "Six colour-coded mutant frogs that players can buy from cargo or find as loot, each with a small gimmick (glowing, heating items, charging devices, exuding water) and a poison type on bite/butcher.",
+  "player_facing_mechanics": [
+    "Frogs can be picked up and carried as held mobs (on_picked_up hooks)",
+    "Albino frog: plain pickup only, no special effect",
+    "Glow frog: emits green light when alive and makes the item holding it emit green light",
+    "Plasma frog: is hot, can be used via secondary/right click on an item to ignite it (fire_act 500,10) and prints a notice; heats the item when picked up; is lava-immune and tolerates any temperature",
+    "Supermatter frog: has a charge port; drag an allowed device onto it and it is stored and slowly recharged (energy guns, security batons, recharge ammo magazines, modular computers); pings when done; clicking it with an empty hand drops the stored device",
+    "Recharge magazines stored in it regain ammo; energy guns/modular computers get their cell topped up by chargerate per tick",
+    "Dew frog: holds 400 units of water, adds 2 water per Life tick, and exposes/secretes water onto its turf as it moves",
+    "Each frog has a bite/reagent poison type (uranium, stable plasma, teslium, water, none)",
+    "Cargo can order an 'Exotic Frog Crate' (frog crate) for CARGO_CRATE_VALUE * 2 containing 3 random exotic frogs",
+    "Frogs spawn from a random loot spawner placed in maint loot, hydroponics/fishing trays, and the cargo crate"
+  ],
+  "content_types": [
+    "mob",
+    "item",
+    "other"
+  ],
+  "type_paths": [
+    "/mob/living/basic/frog/space",
+    "/mob/living/basic/frog/space/green",
+    "/mob/living/basic/frog/space/red",
+    "/mob/living/basic/frog/space/yellow",
+    "/mob/living/basic/frog/space/blue",
+    "/obj/effect/spawner/random/space_frog",
+    "/datum/supply_pack/critter/space_frogs"
+  ],
+  "tg_systems_used": [
+    "basic mobs (/mob/living/basic, on_picked_up, attackby_secondary)",
+    "cargo supply packs (/datum/supply_pack)",
+    "random loot spawners (loot_subtype_path)",
+    "lighting (set_light / mob_item.set_light)",
+    "reagents (create_reagents, add_reagent, expose, remove_all)",
+    "signals (COMSIG_LIVING_DEATH, COMSIG_MOUSEDROPPED_ONTO, COMSIG_MOVABLE_MOVED, COMSIG_LIVING_REVIVE, PROC_REF)",
+    "subsystems (START_PROCESSING(SSmachines), Life(), process())",
+    "traits (ADD_TRAIT, TRAIT_LAVA_IMMUNE, INNATE_TRAIT)",
+    "typecache (typecacheof, is_type_in_typecache)",
+    "power/stock parts (power_store get_cell, give, chargerate)",
+    "atom interaction permissions (can_perform_action, NEED_DEXTERITY/NEED_HANDS/FORBID_TELEKINESIS_REACH, transferItemToLoc)",
+    "temperature (maximum_survivable_temperature, item.heat, fire_act)",
+    "span/to_chat and playsound feedback"
+  ],
+  "data_only_parts": [
+    "icon / head_icon / icon_state / icon_living / icon_dead paths",
+    "name and desc strings for each colour variant",
+    "poison_type reagent references (uranium, stable_plasma, teslium, water)",
+    "maximum_survivable_temperature = INFINITY on the plasma frog",
+    "the random spawner's loot_subtype_path",
+    "supply pack name, desc, cost (CARGO_CRATE_VALUE * 2), contains list, crate_name"
+  ],
+  "logic_parts": [
+    "green: Initialize set_light and on_picked_up lighting the held item",
+    "red: on_picked_up heating the item, attackby_secondary calling weapon.fire_act with notice, Initialize adding lava-immune trait",
+    "yellow: Initialize signal registration, on_mouse_dropped permission/typecache/energy-gun can_charge checks and item pickup, process() recharging cell or adding ammo and dropping when full, drop_charging with ping, attack_hand dropping stored device, Destroy unregistering signals",
+    "blue: Initialize creating 400u water reagent holder and registering move/revive signals, Life adding water each tick, on_move exposing/removing water on the turf, on_revive re-registering the move signal, Destroy unregistering"
+  ],
+  "byond_specific": [
+    "RegisterSignal/UnregisterSignal with PROC_REF and SIGNAL_HANDLER",
+    "START_PROCESSING(SSmachines)/PROCESS_KILL and Life()/process(seconds_per_tick) overrides",
+    "typecacheof/list passed to is_type_in_typecache",
+    "typecast-heavy checks (istype) against concrete item paths",
+    "span_notice + to_chat feedback",
+    "no verbs, browse(), topic() or external servers are present"
+  ],
+  "complexity": "medium",
+  "portability": "partial",
+  "port_notes": "Most surface values (names, sprites, poison reagent, crate contents/cost, spawner table) port directly to SS14 YAML prototypes, but every variant's gimmick needs real code. The base behaviour maps to an NPC prototype plus components/systems: glow becomes a PointLightComponent (and a pickup/held-item light), the charging frog becomes a component with an update-loop that drains/charges a battery/ammo and reacts to a drag-drop interaction, the dew frog becomes a component that exposes and consumes a solution on movement (and on life tick), and the red frog's secondary-click ignition maps to an Ignition/temperature system interaction. The cargo crate maps to a cargo product and the spawner to an entity-spawner/entity-table. Open questions for a human: how to represent 'drag item onto mob' and the allowed-device whitelist, whether held-mob light/heat transfer is worth supporting, what poison/butcher reagent semantics replace poison_type, and whether the per-tick water secretion should be event-driven or ran on a periodic system.",
+  "_files": [
+    "code/modules/mob/living/basic/vermin/space_frog.dm"
+  ],
+  "_dm_lines": 172
+}

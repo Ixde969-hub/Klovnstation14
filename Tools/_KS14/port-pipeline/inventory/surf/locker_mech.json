@@ -1,0 +1,72 @@
+{
+  "feature": "locker_mech",
+  "one_line": "A makeshift 'mech' built from a locker that a player can climb into, drive around with waddling steps, and use a Tension Belt to violently tip over and crush people.",
+  "player_facing_mechanics": [
+    "Pilot the Locker Mech as an enclosed rideable vehicle (IS_ENCLOSED, with lights) that waddles as it moves",
+    "Seal/unseal the cabin: requires the power cell to be at least 80% charged, drains 5% of a standard cell charge per seal, and shows a 'not enough battery!' alert when too low",
+    "Melee attack (force 12) and movement both drain the installed power cell",
+    "Exit the vehicle with a 40-tick exit delay",
+    "Use the built-in Tension Belt melee equipment to rock the mech back and forth and try to tip it over onto a targeted turf",
+    "Tipping only works when the mech has a power cell and both the mech and target turf have gravity; a warning message ('starts rocking back and forward... going to fall over!') plays first",
+    "A successful tip makes the mech fall over and crush any mob on the target turf (3s knockdown) other than the pilot",
+    "If it falls but crushes nobody, the mech and its pilot both take damage equal to 70% of the mech's force and the pilot screams",
+    "After falling, the pilot is paralyzed (~2.2s) and the mech is visually tilted then auto-rights itself ~2s later",
+    "Destroying the mech spawns a plain closet (locker) at its location"
+  ],
+  "content_types": [
+    "item",
+    "structure",
+    "other"
+  ],
+  "type_paths": [
+    "/obj/vehicle/sealed/mecha/locker_mech",
+    "/obj/vehicle/sealed/mecha (parent set_cabin_seal override)",
+    "/datum/armor/locker_mech",
+    "/obj/item/mecha_parts/mecha_equipment/tension_belt",
+    "/obj/effect/landingzone_locker_mech"
+  ],
+  "tg_systems_used": [
+    "mecha vehicle system (equip_by_category, mecha_flags, mech_type, energy drains)",
+    "element traits / waddling element (TRAIT_WADDLING)",
+    "armor datums",
+    "power cell / energy system (cell.charge, use_energy, STANDARD_CELL_CHARGE)",
+    "do_after timed actions with CALLBACK extra_checks",
+    "gravity checks and fall_and_crush / knockdown",
+    "access system (ACCESS_MAINT_TUNNELS)",
+    "balloon alerts, visible_message, emotes",
+    "Standard cell charge constant"
+  ],
+  "data_only_parts": [
+    "Locker Mech stat overrides (name, desc, ui_theme, icon/icon_state, movedelay, max_integrity, force, max_temperature, destruction_sleep_duration, exit_delay, accesses, mecha_flags, mech_type, max_equip_by_category, equip_by_category, step/melee energy drain)",
+    "/datum/armor/locker_mech armor values",
+    "Tension Belt equipment stats (name, desc, icon_state, equip_cooldown, energy_drain, range, toolspeed, harmful, mech_flags, detachable)",
+    "/obj/effect/landingzone_locker_mech icon/icon_state/layer/anchored"
+  ],
+  "logic_parts": [
+    "set_cabin_seal battery threshold check, energy drain and failure alert",
+    "Initialize adding the waddling element trait",
+    "Destroy spawning a /obj/structure/closet in place of the mech",
+    "tension_belt action(): target/gravity validation, landing-zone effect creation, warning message, do_after, fall_and_crush call, crush vs self-damage branching, pilot paralysis/knockdown",
+    "check_mech() proc validating the mech hasn't moved or turned during the do_after",
+    "post_tilt() and untilt() animation/matrix tilt restoration and pixel offset reset"
+  ],
+  "byond_specific": [
+    "AddElementTrait with TRAIT_WADDLING / waddling element reference",
+    "use_energy / cell.charge power model",
+    "balloon_alert() UI",
+    "do_after() with CALLBACK extra_checks and PROC_REF",
+    "playsound() audio",
+    "animate() / transform / turn() / matrix / pixel_y BYOND animation primitives",
+    "visible_message() and emote()",
+    "qdel()",
+    "proc overrides on parent type (set_cabin_seal) and post_tilt returning ..()",
+    "trailing TODO comment block of planned features (emag mode, pneumatic cannon, nuke-op variant) \u2014 not implemented"
+  ],
+  "complexity": "medium",
+  "portability": "partial",
+  "port_notes": "An SS14 port needs a vehicle/mecha entity prototype plus a system for piloting, doors/cabin sealing, energy drain and melee, then a separate 'tip over' system or action: the Tension Belt becomes an Action/DoAfter that validates gravity and target turf, spawns a landing-zone marker, and on completion fires an event that crushes mobs (Knockdown) or damages the mech/pilot. Mecha mechanics map to components (MechaComponent, equipment slots), systems, events, DoAfter, Actions, and the movable/rideable components; the tilt visuals become sprite rotation/offset animation via engine client-side systems, and the waddling becomes a movable modifier or animation. Human questions: whether to model the parent set_cabin_seal override globally (it currently affects ALL mechas, likely a bug), how to represent equip categories and the single Left-Arm-only slot, and whether the locker-spawns-on-destruction and the planned nuke-op/emag variant should be built.",
+  "_files": [
+    "code/modules/vehicles/mecha/combat/locker_mech.dm"
+  ],
+  "_dm_lines": 143
+}

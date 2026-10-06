@@ -1,0 +1,66 @@
+{
+  "feature": "improv_tools",
+  "one_line": "A set of crude, craftable makeshift tools (screwdriver, crowbar, wirecutters, wrench, welding tool) that players build from junk like metal rods, cans and beer \u2014 slower and, for the crowbar, breakable.",
+  "player_facing_mechanics": [
+    "Craft an improvised screwdriver from 1 metal rod (5s)",
+    "Craft an improvised crowbar from 1 metal rod (10s)",
+    "Craft improvised wirecutters from 2 improvised screwdrivers (8s)",
+    "Craft an improvised wrench from 2 metal rods using a welder (15s)",
+    "Craft an improvised welding tool from a soda can, 10u beer, a pipe, a power cell and cable coil using a screwdriver (15s)",
+    "Use improvised tools for their tool functions (screwdriving, prying, cutting, wrenching, welding) but slower than real tools",
+    "Improvised crowbar breaks after a limited number of uses, leaving an 'oddly bent rod' trash item and making a metal-drop sound",
+    "Improvised welding tool runs on beer as fuel (10 max), can be refilled with a screwdriver, cannot be manually turned off once lit, and uses match-strike/wirecutter sounds"
+  ],
+  "content_types": [
+    "item",
+    "recipe"
+  ],
+  "type_paths": [
+    "/obj/item/screwdriver/improvised",
+    "/obj/item/trash/broken_crowbar",
+    "/obj/item/crowbar/improvised",
+    "/obj/item/wirecutters/improvised",
+    "/obj/item/wrench/improvised",
+    "/obj/item/weldingtool/improvised",
+    "/datum/crafting_recipe/welder_improv",
+    "/datum/crafting_recipe/cutters_improv",
+    "/datum/crafting_recipe/wrench_improv",
+    "/datum/crafting_recipe/crowbar_improv",
+    "/datum/crafting_recipe/screwdriver_improv"
+  ],
+  "tg_systems_used": [
+    "crafting system (/datum/crafting_recipe)",
+    "tool behavior framework (TOOL_SCREWDRIVER, TOOL_WELDER and the use_tool() chain)",
+    "materials system (custom_materials, /datum/material/*, HALF_SHEET_MATERIAL_AMOUNT, SHEET_MATERIAL_AMOUNT)",
+    "reagent system (reagent_fuel = /datum/reagent/consumable/ethanol/beer)",
+    "stack items (/obj/item/stack/rods, /obj/item/stack/cable_coil)",
+    "power components (/obj/item/stock_parts/power_store/cell)",
+    "atmospherics piping items (/obj/item/pipe/quaternary/pipe)",
+    "drink containers (/obj/item/reagent_containers/cup/soda_cans)",
+    "weldingtool fuel/activation framework (max_fuel, can_disable, activation_sound, change_icons)"
+  ],
+  "data_only_parts": [
+    "All item stat overrides: name, desc, icon, icon_state, toolspeed, custom_materials, random_color",
+    "Broken crowbar trash item stats (name, desc, icon/icon_state)",
+    "Crowbar var config: durability = 10, broken_type = /obj/item/trash/broken_crowbar, break_sound",
+    "Welder config: max_fuel = 10, reagent_fuel = beer, activation/deactivation sounds, can_disable = FALSE, toolspeed, change_icons = FALSE",
+    "All five /datum/crafting_recipe definitions: result, time, reqs, tool_behaviors, category"
+  ],
+  "logic_parts": [
+    "crowbar/improvised/use_tool() override: post-use durability decrement and break-out behavior \u2014 spawn broken_type at user's loc, play break_sound, qdel self when durability hits zero",
+    "Inherited behavior relied upon: welding tool consuming/refilling beer as reagent fuel via screwdriver and the one-way activation"
+  ],
+  "byond_specific": [
+    "DreamMaker .dmi icon files (surfshack13/icons/improvtools.dmi) and icon_state strings",
+    "playsound() on crowbar break",
+    "qdel(src) and new broken_type(user.loc) object instantiation at break time",
+    "BYOND material defines (HALF_SHEET_MATERIAL_AMOUNT, SHEET_MATERIAL_AMOUNT)"
+  ],
+  "complexity": "simple",
+  "portability": "yes",
+  "port_notes": "Mostly data: item prototypes (screwdriver, crowbar, wirecutters, wrench, welder) and recipe YAMLs (Construction/RecipePrototype with tool quality and material/stack requirements) can be authored directly in SS14 once equivalents for improvised tools, rods, cable coil and beer fuel exist. The only real logic is the crowbar's use-count durability, which maps naturally to a dedicated component plus a system that listens for tool-use events (or an event raised after a successful tool DoAfter) and deletes/spawns the broken prototype on depletion; the welder's beer-fuel, no-disable behavior fits Reagent- or fuel-based components. A human must decide whether improvised tools are distinct entities or variants/qualities of existing tools, how slow tool speed is modeled (tool quality/time multiplier), how the rod-based recipes convert to the SS14 construction/materials model, and whether the crowbar's break RNG/ durability should be a component or a generic tool-durability system.",
+  "_files": [
+    "code/modules/improv_tools.dm"
+  ],
+  "_dm_lines": 110
+}

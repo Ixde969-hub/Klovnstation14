@@ -1,0 +1,75 @@
+{
+  "feature": "store",
+  "one_line": "A persistent metacurrency (doubloons) shop where players spend accumulated currency on items to spawn with at roundstart or buy permanently, plus admin tools to adjust balances.",
+  "player_facing_mechanics": [
+    "Browse a pre-round TGUI shop titled 'Spend Doubloons' listing items with name, cost, icon and icon_state",
+    "Buy a one-time pre-round item that spawns on your character at roundstart",
+    "See your current doubloon balance, shown already reduced by the cost of the item you have queued",
+    "Have the bought item placed in your hands, otherwise inserted into your backpack, otherwise dropped on the floor",
+    "Are warned and not charged if you lack funds or if spawning fails",
+    "Owned persistent items are stored in preferences.inventory and cannot be bought again via the normal store",
+    "Admins can add/subtract a chosen player's doubloons (clamped so balance cannot go negative)",
+    "Admins can mass-add doubloons to every connected player",
+    "Admins can check a player's current doubloon balance"
+  ],
+  "content_types": [
+    "item",
+    "ui",
+    "admin_tool",
+    "infrastructure"
+  ],
+  "type_paths": [
+    "/datum/store_item",
+    "/datum/store_item/roundstart",
+    "/datum/pre_round_store",
+    "/client (readied_store var added)",
+    "/obj/item/antag_maker (referenced, not defined here)"
+  ],
+  "tg_systems_used": [
+    "admin verbs (ADMIN_VERB / ADMIN_CATEGORY_FUN / R_FUN)",
+    "TGUI (ui_interact, ui_data, ui_static_data, ui_act, always_state)",
+    "client preferences metacoins currency",
+    "database (SSdbcore queries, metacoin_item_purchases table)",
+    "atom_storage / backpack insertion",
+    "blackbox logging (BLACKBOX_LOG_ADMIN_VERB)",
+    "subsystems SStgui and SSdbcore",
+    "GLOBAL_LIST_INIT pre_round_items",
+    "preferences.inventory persistence",
+    "log_admin / message_admins"
+  ],
+  "data_only_parts": [
+    "All /datum/store_item/roundstart subtypes: name, item_cost, item_path, one_time_buy stat overrides",
+    "The list of purchasable items (credits, medkits, toolboxes, improvised injectors/DNA mutators, implanters, antag tokens, etc.)"
+  ],
+  "logic_parts": [
+    "/datum/store_item/attempt_purchase fund/purchase branching and charging",
+    "/datum/store_item/finalize_purchase database insert/update of purchased inventory",
+    "/datum/store_item/attempt_spawn spawning the item and handing it to the mob",
+    "/datum/pre_round_store/attempt_buy validation and href-exploit rejection",
+    "/datum/pre_round_store/finalize_purchase_spawn deferred roundstart charging and item placement (hands/backpack/floor)",
+    "/datum/pre_round_store/ui_static_data/ui_data/ui_act balance and item list building",
+    "/datum/pre_round_store/ui_state always_state and Destroy closing UIs",
+    "init_pre_round_items global list builder filtering one_time_buy subtypes",
+    "admin verbs adjust_players_metacoins, mass_add_metacoins, check_players_metacoins"
+  ],
+  "byond_specific": [
+    "ADMIN_VERB macro and admin verb registration system",
+    "tgui_input_list / tgui_input_number modal prompts",
+    "text2path, ispath, subtypesof, initial() operator usage",
+    "CRASH() on invalid path input",
+    "storing BYOND type paths directly as DB item_id values",
+    "client.prefs access and adjust_metacoins client-side currency calls",
+    "SStgui.try_update_ui / close_uis subsystem calls",
+    "QDEL_NULL and QDELETED qdel semantics"
+  ],
+  "complexity": "medium",
+  "portability": "partial",
+  "port_notes": "The item catalog is essentially pure data and maps cleanly to SS14 YAML store/listing prototypes (name, cost, entity prototype id) driven by a StoreSystem. The behavior layers are what need real code: a currency system on the player's profile/bank (metacoins -> a MetaCoin or currency component), a UI system (the PreRoundStore TGUI becomes an SS14 BUI/Eui), purchase/charging logic, and spawn-on-roundstart placement that maps to spawn/equip events (hands -> hand container, backpack -> storage component insertion, floor -> drop). The DB persistence of owned items maps to SS14's player data / database layer rather than direct SQL. Admin balance adjustment maps to admin commands/variables. Design questions a human must answer: whether metacurrency is per-profile (as here) or per-character, how one-time vs repeatable purchases are enforced without a DB round-trip, how href-exploit validation is replaced (SS14 validates prototype ids server-side), and how antag tokens (antag_maker items) integrate with SS14 gamerules/antag selection.",
+  "_files": [
+    "store/admin/admin_coin_modification.dm",
+    "store/pre_round/_pre_round_store.dm",
+    "store/pre_round/roundstart_items/_roundstart_item.dm",
+    "store/store_items/_store_items.dm"
+  ],
+  "_dm_lines": 510
+}

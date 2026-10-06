@@ -1,0 +1,61 @@
+{
+  "feature": "tweak",
+  "one_line": "A player can use the 'tweak' emote to spend stamina and make their character visibly spasm and shake for a few seconds.",
+  "player_facing_mechanics": [
+    "Use the 'tweak' emote (third-person message 'starts tweaking')",
+    "Triggers the tweak component on the living mob for 8 seconds",
+    "Carbon users must pay 60 stamina via adjustStaminaLoss; if they cannot, the emote aborts with no effect",
+    "The affected atom visually shakes by animating pixel_x/pixel_y in one of four random cycles for the duration",
+    "The effect stops early if the mob dies (COMSIG_LIVING_DEATH)",
+    "Mobs at stat > SOFT_CRIT (dead/gibbed/etc.) cannot receive the component",
+    "Brute, non-living but otherwise valid atoms can also be given the component when instantiated directly with a time"
+  ],
+  "content_types": [
+    "mob",
+    "other"
+  ],
+  "type_paths": [
+    "/datum/component/tweak",
+    "/datum/emote/living/tweak"
+  ],
+  "tg_systems_used": [
+    "datum components (COMPONENT_DUPE_HIGHLANDER, RegisterWithParent/UnregisterFromParent)",
+    "SSfastprocess subsystem processing (START_PROCESSING/STOP_PROCESSING)",
+    "timers (addtimer/CALLBACK)",
+    "signals (RegisterSignal/COMSIG_LIVING_DEATH, SIGNAL_HANDLER)",
+    "emotes system (/datum/emote/living, run_emote)",
+    "stamina (mob/living/carbon adjustStaminaLoss)"
+  ],
+  "data_only_parts": [
+    "emote key 'tweak', key_third_person 'tweaks', message 'starts tweaking'",
+    "component default tick_time = 4 SECONDS",
+    "stamina cost constant 60 in run_emote",
+    "emote-applied duration of 8 SECONDS",
+    "the four hardcoded pixel-offset animation keyframe sequences are pure animation data"
+  ],
+  "logic_parts": [
+    "tweak/process() applying the cycling animate() pixel_x/pixel_y offsets",
+    "tweak/Initialize() eligibility checks (isliving stat > SOFT_CRIT guard, isatom guard, COMPONENT_INCOMPATIBLE)",
+    "signal registration/cleanup on death and Destroy() teardown",
+    "run_emote() stamina gating and conditional component attachment"
+  ],
+  "byond_specific": [
+    "animate() with pixel_x/pixel_y, time and loop arguments (BYOND screen-space animation)",
+    "START_PROCESSING/STOP_PROCESSING on SSfastprocess",
+    "addtimer(CALLBACK(src, PROC_REF(Destroy)), time)",
+    "RegisterSignal/UnregisterSignal/SIGNAL_HANDLER and COMSIG_LIVING_DEATH",
+    "COMPONENT_INCOMPATIBLE return contract and dupe_mode/COMPONENT_DUPE_HIGHLANDER",
+    "#ifndef UNIT_TESTS compile-time guard",
+    "rand() for tweak_cycle selection"
+  ],
+  "complexity": "simple",
+  "portability": "partial",
+  "port_notes": "An SS14 port needs an ECS component marking the entity as tweaking plus a system that periodically jitters its SpriteOffset (or a sprite animation), a timer for the duration, and a death event handler to cancel it; the emote maps to an action/chat emote plus a stamina system DoAfter-style check. BYOND's chained animate() pixel offsets have no direct equivalent and must be re-authored as either a keyframe SpriteOffset animation or a repeating timer-driven offset system. A human must decide whether tweaking is player-visible/networked, whether it should be an Action (cooldown-free emote) or a chat emote, if the 60-stamina cost maps to SS14's stamina system, and whether the remaining frames are worth replicating exactly.",
+  "logic_parts_note": "",
+  "port_notes_note": "",
+  "_files": [
+    "code/datums/elements/tweak.dm",
+    "code/modules/mob/living/tweak.dm"
+  ],
+  "_dm_lines": 98
+}
