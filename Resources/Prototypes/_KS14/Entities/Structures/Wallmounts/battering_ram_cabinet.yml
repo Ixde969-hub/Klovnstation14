@@ -1,0 +1,51 @@
+# Ported from SurfShack13's /obj/structure/fireaxecabinet/batteringram (added by hyperjll, SurfShack13 PR #109).
+
+- type: entity
+  parent: FireAxeCabinet
+  id: KsBatteringRamCabinet
+  name: battering ram cabinet
+  description: There is a small label that reads "For Special Operations Only" along with details for safe use of the ram. As if.
+  components:
+  - type: Sprite
+    sprite: _KS14/Structures/Wallmounts/battering_ram_cabinet.rsi
+    layers:
+    - state: cabinet
+    - state: ram
+      map: ["enum.ItemCabinetVisuals.Layer"]
+      visible: true
+    - state: glass
+      map: ["enum.OpenableVisuals.Layer"]
+  - type: ItemSlots
+    slots:
+      ItemCabinet:
+        ejectOnInteract: true
+        whitelist:
+          tags:
+          - KsBatteringRam
+  - type: AccessReader
+    access: [["Security"], ["Command"]]
+
+- type: entity
+  parent: KsBatteringRamCabinet
+  id: KsBatteringRamCabinetOpen
+  suffix: Open
+  components:
+  - type: Openable
+    opened: true
+  - type: Lock
+    locked: false
+
+- type: entity
+  parent: KsBatteringRamCabinet
+  id: KsBatteringRamCabinetFilled
+  suffix: Filled
+  components:
+  - type: ContainerFill
+    containers:
+      ItemCabinet:
+      - KsBatteringRam
+
+- type: entity
+  parent: [KsBatteringRamCabinetFilled, KsBatteringRamCabinetOpen]
+  id: KsBatteringRamCabinetFilledOpen
+  suffix: Filled, Open

@@ -1,0 +1,4 @@
+- files: ["bang.ogg", "heavy_pickup.ogg", "heavy_drop.ogg"]
+  license: "CC-BY-SA-3.0"
+  copyright: "Taken from tgstation via SurfShack13 (battering ram added by hyperjll, PR #109) at commit 8dd5151c51"
+  source: "https://github.com/peppyrmynt/SurfShack13/tree/8dd5151c51/sound"

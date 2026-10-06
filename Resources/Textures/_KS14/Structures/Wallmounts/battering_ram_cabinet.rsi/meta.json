@@ -1,0 +1,23 @@
+{
+    "version": 1,
+    "license": "CC-BY-SA-3.0",
+    "copyright": "Battering ram sprites by hyperjll for SurfShack13 (https://github.com/peppyrmynt/SurfShack13/pull/109), taken at commit 8dd5151c51; glass and glass-up taken from tgstation at https://github.com/tgstation/tgstation/commit/d0d81185f09ca30d3b0856d476544240dba0de53",
+    "size": {
+        "x": 32,
+        "y": 32
+    },
+    "states": [
+        {
+            "name": "cabinet"
+        },
+        {
+            "name": "ram"
+        },
+        {
+            "name": "glass"
+        },
+        {
+            "name": "glass-up"
+        }
+    ]
+}
