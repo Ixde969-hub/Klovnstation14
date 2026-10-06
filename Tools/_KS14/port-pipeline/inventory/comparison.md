@@ -12,8 +12,8 @@ Verdicts: **skip** (BYOND-only or already in Klovn) · **decide** (needs a desig
 | playdate | 35 | n/a — BYOND hub status text | **skip** |
 | frog_ui | ~150 | n/a — BYOND UI theme | **skip** |
 | client_prefs_ooc (country flags) | 116 | No — needs IP geolocation | **skip** (flags) / see store |
-| store + doubloons + antag_spawner | ~870 | No metacurrency, no DB tables for it | **decide** — server-wide economy, needs DB migrations; Klovn maintainers may not want it |
-| battering_ram | 139 | No | **port S** — proof-of-concept candidate |
+| store + doubloons + antag_spawner | ~870 | No metacurrency | **skip** (user decision 2026-10-06) |
+| battering_ram | 139 | No | **ported** (proof of concept, branch `port-battering-ram`) |
 | improv_tools | 110 | Partly — makeshift weapons/cuffs/shield, no makeshift tools | **port S** |
 | noose | 155 | No | **port S** (check Klovn content rules) |
 | tweak (emote + wand) | 98 + wand | No | **port S** |
@@ -34,7 +34,7 @@ Verdicts: **skip** (BYOND-only or already in Klovn) · **decide** (needs a desig
 ## Rough totals
 
 - **Skip:** 4 features (~960 lines) — BYOND-only or Klovn already has it.
-- **Decide first:** metacurrency store (~870 lines).
+- **Skipped by decision:** metacurrency store (~870 lines).
 - **Port:** 17 features — 6 small, 8 medium, 3 large (bloodsuckers, nanites, swarmers ≈ 80% of the remaining code).
 
 ## Notes
