@@ -31,8 +31,8 @@ public sealed partial class BodyPowersWindow : FancyWindow
     {
         IoCManager.InjectDependencies(this);
         Title = Loc.GetString("body-powers-window-title");
-        MinSize = new Vector2(470, 420);
-        SetSize = new Vector2(500, 560);
+        MinSize = new Vector2(540, 420);
+        SetSize = new Vector2(540, 600);
 
         var root = new BoxContainer { Orientation = BoxContainer.LayoutOrientation.Vertical, Margin = new Thickness(10, 6), SeparationOverride = 6 };
         _header = new RichTextLabel();
@@ -94,28 +94,12 @@ public sealed partial class BodyPowersWindow : FancyWindow
             }
 
             var reached = stage <= body.Stage;
-            var pill = new PanelContainer
-            {
-                SetSize = new Vector2(156, 24),
-                MouseFilter = MouseFilterMode.Stop,
-                ToolTip = prototype.Description,
-                PanelOverride = new StyleBoxFlat
-                {
-                    BackgroundColor = reached ? Color.FromHex("#2a2d33") : Color.FromHex("#1c1d21"),
-                    BorderColor = reached ? Gold.WithAlpha(0.45f) : Color.FromHex("#303236"),
-                    BorderThickness = new Thickness(1),
-                    ContentMarginLeftOverride = 6,
-                    ContentMarginRightOverride = 6,
-                },
-            };
-            pill.AddChild(new Label
-            {
-                Text = reached ? prototype.Name : Loc.GetString("body-powers-window-art-locked", ("art", prototype.Name), ("stage", stage)),
-                ClipText = true,
-                HorizontalExpand = true,
-                VAlign = Label.VAlignMode.Center,
-                FontColorOverride = reached ? Color.White : Locked,
-            });
+            var pill = Pill(
+                reached ? prototype.Name : Loc.GetString("body-powers-window-art-locked", ("art", prototype.Name), ("stage", stage)),
+                prototype.Description,
+                reached ? Color.White : Locked,
+                reached ? Gold.WithAlpha(0.45f) : LockedBorder,
+                reached ? ReachedBackground : LockedBackground);
             row!.AddChild(pill);
         }
 
@@ -154,38 +138,72 @@ public sealed partial class BodyPowersWindow : FancyWindow
 
         row.AddChild(top);
 
-        // Unlocked powers as short names (gold when major), then the next one greyed out.
-        var chips = new GridContainer { Columns = 3, HSeparationOverride = 10, VSeparationOverride = 0, Margin = new Thickness(12, 0, 0, 0) };
-        foreach (var power in powers.Where(p => p.Level <= level))
-            chips.AddChild(Chip(power, unlocked: true));
-
+        // Unlocked powers as fixed-size pills, three to a row (gold when major), then the next one greyed out. Fixed
+        //     sizes, because rich text in a grid measures its height wrong and the rows end up drawn over each other.
+        var chips = powers.Where(p => p.Level <= level).Select(p => Chip(p, unlocked: true)).ToList();
         if (powers.FirstOrDefault(p => p.Level > level) is { } next)
-            chips.AddChild(Chip(next, unlocked: false));
+            chips.Add(Chip(next, unlocked: false));
 
-        if (chips.ChildCount > 0)
-            row.AddChild(chips);
+        BoxContainer? chipRow = null;
+        for (var i = 0; i < chips.Count; i++)
+        {
+            if (i % 3 == 0)
+            {
+                chipRow = new BoxContainer { Orientation = BoxContainer.LayoutOrientation.Horizontal, SeparationOverride = 6, Margin = new Thickness(6, 0, 0, 0) };
+                row.AddChild(chipRow);
+            }
+
+            chipRow!.AddChild(chips[i]);
+        }
 
         return row;
+    }
+
+    private static readonly Color ReachedBackground = Color.FromHex("#2a2d33");
+    private static readonly Color LockedBackground = Color.FromHex("#1c1d21");
+    private static readonly Color PlainBorder = Color.FromHex("#3a3d44");
+    private static readonly Color LockedBorder = Color.FromHex("#303236");
+
+    /// <summary>
+    ///     A name in a box of fixed size; anything too long is cut off, and the tooltip says what it does.
+    /// </summary>
+    private static PanelContainer Pill(string text, string tooltip, Color textColor, Color border, Color background)
+    {
+        var pill = new PanelContainer
+        {
+            SetSize = new Vector2(160, 24),
+            MouseFilter = MouseFilterMode.Stop,
+            ToolTip = tooltip,
+            PanelOverride = new StyleBoxFlat
+            {
+                BackgroundColor = background,
+                BorderColor = border,
+                BorderThickness = new Thickness(1),
+                ContentMarginLeftOverride = 6,
+                ContentMarginRightOverride = 6,
+            },
+        };
+        pill.AddChild(new Label
+        {
+            Text = text,
+            ClipText = true,
+            HorizontalExpand = true,
+            VAlign = Label.VAlignMode.Center,
+            FontColorOverride = textColor,
+        });
+        return pill;
     }
 
     private Control Chip(BodyTemperingPowerPrototype power, bool unlocked)
     {
         var name = Loc.GetString(power.Name);
-        string markup;
+        var description = Loc.GetString(power.Description);
         if (!unlocked)
-            markup = $"[color={Locked.ToHex()}]{Loc.GetString("body-powers-window-next", ("power", name), ("level", power.Level))}[/color]";
-        else if (power.Major)
-            markup = $"[bold][color={Gold.ToHex()}]{name}[/color][/bold]";
-        else
-            markup = name;
+            return Pill(Loc.GetString("body-powers-window-next", ("power", name), ("level", power.Level)), description, Locked, LockedBorder, LockedBackground);
 
-        var label = new RichTextLabel
-        {
-            MouseFilter = MouseFilterMode.Stop,
-            ToolTip = Loc.GetString(power.Description),
-        };
-        label.SetMessage(FormattedMessage.FromMarkupOrThrow(markup));
-        return label;
+        return power.Major
+            ? Pill(name, description, Gold, Gold.WithAlpha(0.6f), ReachedBackground)
+            : Pill(name, description, Color.White, PlainBorder, ReachedBackground);
     }
 
     private static string Capitalize(string text)

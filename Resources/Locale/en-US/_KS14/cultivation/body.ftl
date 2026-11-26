@@ -114,7 +114,7 @@ body-powers-window-level = level {$level}/{$max}
 body-powers-window-progress = {$progress} / {$cost} towards the next level
 body-powers-window-capped = Can't go higher until your next Tribulation of Flesh.
 body-powers-window-perfected = perfected
-body-powers-window-next = next: {$power} (level {$level})
+body-powers-window-next = {$power} (lv {$level})
 body-ready-for-tribulation = Every part of you is forged past your stage. Your Forge button has turned gold: press it to begin the Tribulation of Flesh.
 body-guide = [bold]The path of the body, in brief:[/bold]
     • You earn [bold]tempering[/bold] by fighting, training on walls and rock, taking blows and simply living. It shows at the side of your screen.
