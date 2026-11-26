@@ -86,6 +86,7 @@ public sealed partial class CultivationLawArtSystem : EntitySystem
     [Dependency] private SharedTransformSystem _transformSystem = default!;
     [Dependency] private ThrowingSystem _throwingSystem = default!;
     [Dependency] private Robust.Shared.Containers.SharedContainerSystem _containerSystem = default!;
+    [Dependency] private Content.Shared.Examine.ExamineSystemShared _examineSystem = default!;
 
     private readonly HashSet<Entity<MobStateComponent>> _mobs = new();
     private readonly HashSet<Entity<PlantHolderComponent>> _plants = new();
@@ -483,26 +484,46 @@ public sealed partial class CultivationLawArtSystem : EntitySystem
     [SubscribeLocalEvent]
     private void OnFurnaceBurst(Entity<CultivatorComponent> entity, ref FurnaceBurstActionEvent args)
     {
-        if (args.Handled || !_cultivationSystem.TryUseTechnique(entity, args.QiCost))
+        var origin = _transformSystem.GetMapCoordinates(entity);
+        var aimed = _transformSystem.ToMapCoordinates(args.Target);
+        if (args.Handled || aimed.MapId != origin.MapId)
+            return;
+
+        var toward = aimed.Position - origin.Position;
+        if (toward.LengthSquared() < 0.01f)
+            toward = Transform(entity).LocalRotation.ToWorldVec();
+
+        if (!_cultivationSystem.TryUseTechnique(entity, args.QiCost))
             return;
 
         args.Handled = true;
-        var range = _cultivationSystem.AreaRange(entity, args.Range);
-        _visualsSystem.FireRing(entity, range, 12, 12);
-        _visualsSystem.Wave(entity, FxColour.Fire, big: true);
-        _visualsSystem.Shockwave(_transformSystem.GetMapCoordinates(entity), strength: 1.5f);
-        foreach (var victimUid in Hostiles(entity, range))
-            _flammableSystem.AdjustFireStacks(victimUid, 2f * _cultivationSystem.Power(entity), ignite: true);
+        var direction = Vector2.Normalize(toward);
+        var length = args.Range + args.RangePerRealm * _cultivationSystem.RealmSteps(entity);
+        var halfWidth = args.Width.Theta / 2;
+        _visualsSystem.FireCone(origin, direction, length, (float)halfWidth);
+        _visualsSystem.Shockwave(origin, strength: 1.5f);
+
+        // Everyone hostile in the cone who could be seen from where you stand: hottest up close.
+        var power = _cultivationSystem.Power(entity);
+        foreach (var victimUid in Hostiles(entity, length))
+        {
+            var offset = _transformSystem.GetMapCoordinates(victimUid).Position - origin.Position;
+            var distance = offset.Length();
+            if (distance > length || distance > 0.3f && Math.Abs(Angle.ShortestDistance(new Angle(direction), new Angle(offset)).Theta) > halfWidth
+                || !_examineSystem.InRangeUnOccluded(entity.Owner, victimUid, length + 1f))
+                continue;
+
+            var heat = args.Heat * (1f - 2f / 3f * Math.Clamp(distance / length, 0f, 1f));
+            _damageableSystem.TryChangeDamage(victimUid, _cultivationSystem.Empowered(entity, CultivationSystem.Damage("Heat", heat)), origin: entity);
+            _flammableSystem.AdjustFireStacks(victimUid, 2f * power, ignite: true);
+        }
 
         // It's hot for you too.
         _damageableSystem.TryChangeDamage(entity.Owner, CultivationSystem.Damage("Heat", 5f), ignoreResistances: true, interruptsDoAfters: false);
 
-        // Fire Root: the blast flings you back out of the flames.
+        // Fire Root: the blast throws you back, away from where you aimed.
         if (_sharedCultivationSystem.HasRoot(entity, CultivationElement.Fire))
-        {
-            var facing = Transform(entity).LocalRotation.ToWorldVec();
-            _throwingSystem.TryThrow(entity, -facing * 3f, baseThrowSpeed: 10f, recoil: false, doSpin: false);
-        }
+            _throwingSystem.TryThrow(entity, -direction * 3f, baseThrowSpeed: 10f, recoil: false, doSpin: false);
 
         _audioSystem.PlayPvs(FireSound, entity);
         _noticeSystem.Announce(entity, Loc.GetString("cultivation-furnace-burst", ("user", entity.Owner)), type: PopupType.MediumCaution);

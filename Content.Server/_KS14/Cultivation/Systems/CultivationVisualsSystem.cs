@@ -546,6 +546,47 @@ public sealed partial class CultivationVisualsSystem : EntitySystem
     }
 
     /// <summary>
+    ///     Fire rolling out in a cone: rows of flame from near to far, each a moment after the last, so it reads as a
+    ///         blast travelling outward. Tall flames down the middle, smaller ones at the edges.
+    /// </summary>
+    public void FireCone(MapCoordinates origin, Vector2 direction, float length, float halfWidth)
+    {
+        // About one flame per ~0.8 tiles, spaced out further on a huge cone so it never floods the area.
+        var area = halfWidth * length * length;
+        var spacing = MathF.Max(0.8f, MathF.Sqrt(area / MaxConeFlames));
+        var facing = new Angle(direction);
+        for (var distance = 0.8f; distance <= length; distance += spacing)
+        {
+            var across = Math.Max(1, (int)MathF.Ceiling(2f * distance * halfWidth / spacing));
+            var row = new List<Vector2>(across);
+            for (var i = 0; i < across; i++)
+            {
+                var t = across == 1 ? 0f : i / (float)(across - 1) * 2f - 1f;
+                var angle = facing + new Angle(t * halfWidth + _robustRandom.NextFloat(-0.05f, 0.05f));
+                row.Add(angle.ToVec() * distance * _robustRandom.NextFloat(0.92f, 1.06f));
+            }
+
+            var rowDistance = distance;
+            Robust.Shared.Timing.Timer.Spawn(TimeSpan.FromSeconds(ConeWaveDelay * rowDistance), () =>
+            {
+                for (var i = 0; i < row.Count; i++)
+                {
+                    var edge = row.Count == 1 ? 0f : Math.Abs(i / (float)(row.Count - 1) * 2f - 1f);
+                    var pool = edge < 0.4f ? BigFlames : edge < 0.8f ? MediumFlames : SmallFlames;
+                    Spawn(_robustRandom.Pick(pool), origin.Offset(row[i]));
+                }
+            });
+        }
+    }
+
+    private const float MaxConeFlames = 70f;
+
+    /// <summary>
+    ///     Seconds per tile the blast takes to roll outward.
+    /// </summary>
+    private const float ConeWaveDelay = 0.04f;
+
+    /// <summary>
     ///     Real fire roaring out from someone in a ring: tall flames around the edge, smaller ones filling it in.
     /// </summary>
     public void FireRing(EntityUid atUid, float radius, int ringFlames, int innerFlames)

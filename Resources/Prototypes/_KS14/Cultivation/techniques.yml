@@ -324,14 +324,17 @@
   parent: BaseActionCultivation
   id: ActionCultivationFurnaceBurst
   name: Furnace Burst
-  description: Stoke your inner furnace and release a ring of fire around you. It's hot for you too. Fire Root flings you back out of the flames. 35 qi.
+  description: Stoke your inner furnace and blast a long cone of fire the way you aim, six tiles plus two per realm. Hottest up close; walls stop it. It's hot for you too. Fire Root throws you back from the blast. 35 qi.
   components:
   - type: CultivationArtCategory
     category: Offensive
   - type: Action
     useDelay: 20
     icon: { sprite: _KS14/Cultivation/actions.rsi, state: furnace_burst }
-  - type: InstantAction
+  - type: TargetAction
+    checkCanAccess: false
+    range: 30
+  - type: WorldTargetAction
     event: !type:FurnaceBurstActionEvent
 
 - type: entity

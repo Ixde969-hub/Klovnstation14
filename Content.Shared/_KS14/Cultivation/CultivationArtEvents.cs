@@ -224,13 +224,34 @@ public sealed partial class KindleActionEvent : EntityTargetActionEvent, Content
     public float QiCost { get; set; } = 10f;
 }
 
-public sealed partial class FurnaceBurstActionEvent : InstantActionEvent, Content.Shared._KS14.Cultivation.IQiCostEvent
+/// <summary>
+///     Furnace Burst: a long cone of fire rolling out the way you aim.
+/// </summary>
+public sealed partial class FurnaceBurstActionEvent : WorldTargetActionEvent, Content.Shared._KS14.Cultivation.IQiCostEvent
 {
     [DataField]
     public float QiCost { get; set; } = 35f;
 
+    /// <summary>
+    ///     How far the cone reaches at the first realm; two tiles further for every realm above.
+    /// </summary>
     [DataField]
-    public float Range = 2.5f;
+    public float Range = 6f;
+
+    [DataField]
+    public float RangePerRealm = 2f;
+
+    /// <summary>
+    ///     The cone's full width.
+    /// </summary>
+    [DataField]
+    public Angle Width = Angle.FromDegrees(60);
+
+    /// <summary>
+    ///     Heat at point-blank; it falls off to a third of this at the far end.
+    /// </summary>
+    [DataField]
+    public float Heat = 15f;
 }
 
 public sealed partial class BurningBloodActionEvent : InstantActionEvent
